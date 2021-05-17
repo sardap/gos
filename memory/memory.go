@@ -45,6 +45,11 @@ func (m *Memory) WriteByte(address uint16, value byte) {
 	}
 }
 
+func (m *Memory) WriteShort(address, value uint16) {
+	m.WriteByte(address, byte(value&0x00FF))
+	m.WriteByte(address+1, byte(value>>8))
+}
+
 func (m *Memory) ReadByte(address uint16) byte {
 	switch {
 	//Intenal Ram

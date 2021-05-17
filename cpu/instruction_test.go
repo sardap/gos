@@ -185,3 +185,70 @@ func TestAsl(t *testing.T) {
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
 	}
 }
+
+func TestBranchFlags(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	testCases := []struct {
+		inscut cpu.Instruction
+		flag   cpu.Flag
+		valid  bool
+	}{
+		{inscut: cpu.Bcc, flag: cpu.FlagCarry, valid: false},
+		{inscut: cpu.Bcs, flag: cpu.FlagCarry, valid: true},
+		{inscut: cpu.Bne, flag: cpu.FlagZero, valid: false},
+		{inscut: cpu.Beq, flag: cpu.FlagZero, valid: true},
+		{inscut: cpu.Bpl, flag: cpu.FlagNegative, valid: false},
+		{inscut: cpu.Bmi, flag: cpu.FlagNegative, valid: true},
+		{inscut: cpu.Bvc, flag: cpu.FlagOverflow, valid: false},
+		{inscut: cpu.Bvs, flag: cpu.FlagOverflow, valid: true},
+	}
+
+	for _, test := range testCases {
+		//Branch postive on same page
+		c.Registers.PC = 50
+		c.ExtraTicks = 0
+		c.Memory.WriteByte(c.Registers.PC+1, 0b00000011)
+		c.Registers.P.SetFlag(test.flag, test.valid)
+
+		test.inscut(c, cpu.AddressModeRelative)
+
+		assert.Equal(t, uint16(53), c.Registers.PC)
+		assert.Equal(t, uint8(1), c.ExtraTicks)
+
+		//Branch Negtaive on same page
+		c.Registers.PC = 50
+		c.ExtraTicks = 0
+		c.Memory.WriteByte(c.Registers.PC+1, 0b11111101)
+		c.Registers.P.SetFlag(test.flag, test.valid)
+
+		test.inscut(c, cpu.AddressModeRelative)
+
+		assert.Equal(t, uint16(47), c.Registers.PC)
+		assert.Equal(t, uint8(1), c.ExtraTicks)
+
+		//Branch to a new page
+		c.Registers.PC = 129
+		c.ExtraTicks = 0
+		c.Memory.WriteByte(c.Registers.PC+1, 127)
+		c.Registers.P.SetFlag(test.flag, test.valid)
+
+		test.inscut(c, cpu.AddressModeRelative)
+
+		assert.Equal(t, uint16(256), c.Registers.PC)
+		assert.Equal(t, uint8(2), c.ExtraTicks)
+
+		//Don't branch to a new page
+		c.Registers.PC = 5
+		c.ExtraTicks = 0
+		c.Memory.WriteByte(c.Registers.PC+1, 5)
+		c.Registers.P.SetFlag(test.flag, !test.valid)
+
+		test.inscut(c, cpu.AddressModeRelative)
+
+		assert.Equal(t, uint16(7), c.Registers.PC)
+		assert.Equal(t, uint8(0), c.ExtraTicks)
+	}
+}

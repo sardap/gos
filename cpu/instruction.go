@@ -46,14 +46,15 @@ const (
 	AddressModeIndirectX
 	AddressModeIndirectY
 	AddressModeAccumulator
+	AddressModeRelative
 	AddressModeLength
 )
 
-type instruction func(c *Cpu, mode AddressMode)
+type Instruction func(c *Cpu, mode AddressMode)
 
 type Operation struct {
 	Name        string
-	Inst        instruction
+	Inst        Instruction
 	Length      byte
 	MinCycles   byte
 	AddressMode AddressMode
@@ -65,7 +66,7 @@ var (
 
 func init() {
 	opcodes = map[byte]*Operation{
-		//Adc A + M + C -> A, C
+		// Adc A + M + C -> A, C
 		0x69: {Inst: Adc, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "ADC #oper"},
 		0x65: {Inst: Adc, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "ADC oper"},
 		0x75: {Inst: Adc, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "ADC oper,X"},
@@ -74,7 +75,7 @@ func init() {
 		0x79: {Inst: Adc, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "ADC oper,Y"},
 		0x61: {Inst: Adc, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "ADC (oper,X)"},
 		0x71: {Inst: Adc, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "ADC (oper),Y"},
-		//And A AND M -> A
+		// And A AND M -> A
 		0x29: {Inst: And, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "AND #oper"},
 		0x25: {Inst: And, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "AND oper"},
 		0x35: {Inst: And, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "AND oper,X"},
@@ -83,12 +84,32 @@ func init() {
 		0x39: {Inst: And, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "AND oper,Y"},
 		0x21: {Inst: And, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "AND (oper,X)"},
 		0x31: {Inst: And, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "AND (oper),Y"},
-		//Asl C <- [76543210] <- 0
+		// Asl C <- [76543210] <- 0
 		0x0A: {Inst: Asl, Length: 1, MinCycles: 2, AddressMode: AddressModeAccumulator, Name: "ASL A"},
 		0x06: {Inst: Asl, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "ASL oper"},
 		0x16: {Inst: Asl, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "ASL oper,X"},
 		0x0E: {Inst: Asl, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "ASL oper"},
 		0x1E: {Inst: Asl, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "ASL oper,X"},
+		/*
+			Function handles PC
+			Extra cycles
+		*/
+		// Bcc branch on C = 0
+		0x90: {Inst: Bcc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCC oper"}, //Extra cycles
+		// Branch on Carry Set
+		0xB0: {Inst: Bcs, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCS oper"}, //Extra cycles
+		// Branch on Result Zero
+		0xF0: {Inst: Beq, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BEQ oper"}, //Extra cycles
+		// Branch on Result Minus
+		0x30: {Inst: Bmi, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BMI oper"}, //Extra cycles
+		// Branch on Result not Zero
+		0xD0: {Inst: Bne, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BNE oper"}, //Extra cycles
+		// Branch on Result Plus
+		0x10: {Inst: Bpl, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BPL oper"}, //Extra cycles
+		// Branch on Overflow Clear
+		0x50: {Inst: Bvc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVC oper"}, //Extra cycles
+		// Branch on Overflow Set
+		0x70: {Inst: Bvs, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVS oper"}, //Extra cycles
 	}
 }
 
@@ -219,4 +240,53 @@ func Asl(c *Cpu, mode AddressMode) {
 	c.Registers.P.SetFlag(FlagCarry, carryHappend(result))
 
 	c.writeByte(mode, byte(result))
+}
+
+func branchOnFlag(c *Cpu, flag bool) {
+	orginalAddress := c.Registers.PC
+	if flag {
+		c.Registers.PC += uint16(int8(c.Memory.ReadByte(c.Registers.PC + 1)))
+
+		oldPage := orginalAddress / 256
+		newPage := c.Registers.PC / 256
+		if oldPage == newPage {
+			c.ExtraTicks++
+		} else {
+			c.ExtraTicks += 2
+		}
+	} else {
+		c.Registers.PC += 2
+	}
+}
+
+func Bcc(c *Cpu, mode AddressMode) {
+	branchOnFlag(c, !c.Registers.P.ReadFlag(FlagCarry))
+}
+
+func Bcs(c *Cpu, mode AddressMode) {
+	branchOnFlag(c, c.Registers.P.ReadFlag(FlagCarry))
+}
+
+func Beq(c *Cpu, mode AddressMode) {
+	branchOnFlag(c, c.Registers.P.ReadFlag(FlagZero))
+}
+
+func Bmi(c *Cpu, mode AddressMode) {
+	branchOnFlag(c, c.Registers.P.ReadFlag(FlagNegative))
+}
+
+func Bne(c *Cpu, mode AddressMode) {
+	branchOnFlag(c, !c.Registers.P.ReadFlag(FlagZero))
+}
+
+func Bpl(c *Cpu, mode AddressMode) {
+	branchOnFlag(c, !c.Registers.P.ReadFlag(FlagNegative))
+}
+
+func Bvc(c *Cpu, mode AddressMode) {
+	branchOnFlag(c, !c.Registers.P.ReadFlag(FlagOverflow))
+}
+
+func Bvs(c *Cpu, mode AddressMode) {
+	branchOnFlag(c, c.Registers.P.ReadFlag(FlagOverflow))
 }

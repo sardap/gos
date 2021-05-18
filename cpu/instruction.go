@@ -2,6 +2,7 @@ package cpu
 
 import (
 	"fmt"
+	"math"
 
 	nesmath "github.com/sardap/gos/math"
 )
@@ -30,6 +31,8 @@ func (a *AddressMode) String() string {
 		return "IndirectY"
 	case AddressModeAccumulator:
 		return "Accumulator"
+	case AddressModeImplied:
+		return "Implied"
 	}
 
 	panic(fmt.Errorf("unkown addressMode string"))
@@ -47,6 +50,7 @@ const (
 	AddressModeIndirectY
 	AddressModeAccumulator
 	AddressModeRelative
+	AddressModeImplied
 	AddressModeLength
 )
 
@@ -95,21 +99,59 @@ func init() {
 			Extra cycles
 		*/
 		// Bcc branch on C = 0
-		0x90: {Inst: Bcc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCC oper"}, //Extra cycles
+		0x90: {Inst: Bcc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCC oper"},
 		// Branch on Carry Set
-		0xB0: {Inst: Bcs, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCS oper"}, //Extra cycles
+		0xB0: {Inst: Bcs, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCS oper"},
 		// Branch on Result Zero
-		0xF0: {Inst: Beq, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BEQ oper"}, //Extra cycles
+		0xF0: {Inst: Beq, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BEQ oper"},
 		// Branch on Result Minus
-		0x30: {Inst: Bmi, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BMI oper"}, //Extra cycles
+		0x30: {Inst: Bmi, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BMI oper"},
 		// Branch on Result not Zero
-		0xD0: {Inst: Bne, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BNE oper"}, //Extra cycles
+		0xD0: {Inst: Bne, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BNE oper"},
 		// Branch on Result Plus
-		0x10: {Inst: Bpl, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BPL oper"}, //Extra cycles
+		0x10: {Inst: Bpl, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BPL oper"},
 		// Branch on Overflow Clear
-		0x50: {Inst: Bvc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVC oper"}, //Extra cycles
+		0x50: {Inst: Bvc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVC oper"},
 		// Branch on Overflow Set
-		0x70: {Inst: Bvs, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVS oper"}, //Extra cycles
+		0x70: {Inst: Bvs, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVS oper"},
+		// A AND M, M7 -> N, M6 -> V
+		0x24: {Inst: Bit, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "BIT oper"},
+		0x2C: {Inst: Bit, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "BIT oper"},
+		// Clears
+		// 0 -> C
+		0x18: {Inst: Clc, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "CLC"},
+		// 0 -> D
+		0xD8: {Inst: Cld, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "CLD"},
+		// 0 -> I
+		0x58: {Inst: Cli, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "CLI"},
+		// 0 -> V
+		0xB8: {Inst: Clv, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "CLV"},
+		// A - M
+		0xC9: {Inst: Cmp, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "CMP #oper"},
+		0xC5: {Inst: Cmp, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "CMP oper"},
+		0xD5: {Inst: Cmp, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "CMP oper,X"},
+		0xCD: {Inst: Cmp, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "CMP oper"},
+		0xDD: {Inst: Cmp, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "CMP oper,X"},
+		0xD9: {Inst: Cmp, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "CMP oper,Y"},
+		0xC1: {Inst: Cmp, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "CMP (oper,X)"},
+		0xD1: {Inst: Cmp, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "CMP (oper),Y"},
+		// X - M
+		0xE0: {Inst: Cpx, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "CPX #oper"},
+		0xE4: {Inst: Cpx, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "CPX oper"},
+		0xEC: {Inst: Cpx, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "CPX oper"},
+		// Y - M
+		0xC0: {Inst: Cpy, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "CPY #oper"},
+		0xC4: {Inst: Cpy, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "CPY oper"},
+		0xCC: {Inst: Cpy, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "CPY oper"},
+		// M - 1 -> M
+		0xC6: {Inst: Dec, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "DEC oper"},
+		0xD6: {Inst: Dec, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "DEC oper,X"},
+		0xCE: {Inst: Dec, Length: 2, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "DEC oper"},
+		0xDE: {Inst: Dec, Length: 2, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "DEC oper,X"},
+		// X - 1 -> X
+		0xCA: {Inst: Dex, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "DEX"},
+		// Y - 1 -> Y
+		0x88: {Inst: Dey, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "DEY"},
 	}
 }
 
@@ -129,6 +171,10 @@ func (c *Cpu) Excute() {
 	fmt.Printf("%02X %02X %02X\n", opcode, oprand1, oprand2)
 }
 
+func samePage(a, b uint16) bool {
+	return 256/math.Max(1, float64(a)) != 256/math.Max(1, float64(b))
+}
+
 func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 	operand := c.Memory.ReadByte(c.Registers.PC + 1)
 
@@ -146,16 +192,28 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return c.Memory.ReadUint16(c.Registers.PC + 1)
 
 	case AddressModeAbsoluteX:
-		return c.Memory.ReadUint16(c.Registers.PC+1) + uint16(c.Registers.X)
+		address := c.Memory.ReadUint16(c.Registers.PC+1) + uint16(c.Registers.X)
+		if samePage(address, c.Registers.PC) {
+			c.ExtraTicks++
+		}
+		return address
 
 	case AddressModeAbsoluteY:
-		return c.Memory.ReadUint16(c.Registers.PC+1) + uint16(c.Registers.Y)
+		address := c.Memory.ReadUint16(c.Registers.PC+1) + uint16(c.Registers.Y)
+		if samePage(address, c.Registers.PC) {
+			c.ExtraTicks++
+		}
+		return address
 
 	case AddressModeIndirectX:
 		return c.Memory.ReadUint16(uint16(operand + c.Registers.X))
 
 	case AddressModeIndirectY:
-		return uint16(c.Memory.ReadUint16(uint16(operand))) + uint16(c.Registers.Y)
+		address := uint16(c.Memory.ReadUint16(uint16(operand))) + uint16(c.Registers.Y)
+		if samePage(address, c.Registers.PC) {
+			c.ExtraTicks++
+		}
+		return address
 
 	default:
 		panic(fmt.Errorf("address mode not implmented"))
@@ -193,6 +251,11 @@ func overflowHappend(left, right, result byte) bool {
 
 func carryHappend(result uint16) bool {
 	return result&0xFF00 > 0
+}
+
+// CMP and CPX are speical
+func cmpCarryHappend(a, right uint8) bool {
+	return a >= right
 }
 
 func negativeHappend(result uint16) bool {
@@ -289,4 +352,79 @@ func Bvc(c *Cpu, mode AddressMode) {
 
 func Bvs(c *Cpu, mode AddressMode) {
 	branchOnFlag(c, c.Registers.P.ReadFlag(FlagOverflow))
+}
+
+func Bit(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+
+	c.Registers.P.SetFlag(FlagNegative, nesmath.BitSet(operand, 7))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(c.Registers.A&operand)))
+	c.Registers.P.SetFlag(FlagOverflow, nesmath.BitSet(operand, 6))
+
+	c.writeByte(mode, c.Registers.A&operand)
+}
+
+func clearBit(c *Cpu, flag Flag) {
+	c.Registers.P.SetFlag(flag, false)
+}
+
+func Clc(c *Cpu, mode AddressMode) {
+	clearBit(c, FlagCarry)
+}
+
+func Cld(c *Cpu, mode AddressMode) {
+	clearBit(c, FlagDecimal)
+}
+
+func Cli(c *Cpu, mode AddressMode) {
+	clearBit(c, FlagInteruprtDisable)
+}
+
+func Clv(c *Cpu, mode AddressMode) {
+	clearBit(c, FlagOverflow)
+}
+
+func compare(c *Cpu, mode AddressMode, reg uint8) {
+	operand := c.readByte(mode)
+
+	result := uint16(reg) - uint16(operand)
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(result))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
+	c.Registers.P.SetFlag(FlagCarry, cmpCarryHappend(reg, operand))
+}
+
+func Cmp(c *Cpu, mode AddressMode) {
+	compare(c, mode, c.Registers.A)
+}
+
+func Cpx(c *Cpu, mode AddressMode) {
+	compare(c, mode, c.Registers.X)
+}
+
+func Cpy(c *Cpu, mode AddressMode) {
+	compare(c, mode, c.Registers.Y)
+}
+
+func decerment(c *Cpu, value uint8) uint8 {
+	result := value - 1
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(result)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
+
+	return result
+}
+
+func Dec(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+	result := decerment(c, operand)
+	c.writeByte(mode, result)
+}
+
+func Dex(c *Cpu, mode AddressMode) {
+	c.Registers.X = decerment(c, c.Registers.X)
+}
+
+func Dey(c *Cpu, mode AddressMode) {
+	c.Registers.Y = decerment(c, c.Registers.Y)
 }

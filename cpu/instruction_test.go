@@ -1,6 +1,7 @@
 package cpu_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/sardap/gos/cpu"
@@ -70,6 +71,11 @@ func writeByteToAddress(c *cpu.Cpu, mode cpu.AddressMode, val byte) {
 				c.Memory.WriteShort(1, 300)
 				c.Memory.WriteByte(310, val)
 
+			case cpu.AddressModeIndirect:
+				c.Registers.PC = 0
+				c.Memory.WriteShort(1, 2048)
+				c.Memory.WriteByte(2048, val)
+
 			case cpu.AddressModeIndirectX:
 				c.Registers.PC = 0
 				c.Registers.X = 10
@@ -83,6 +89,68 @@ func writeByteToAddress(c *cpu.Cpu, mode cpu.AddressMode, val byte) {
 				c.Memory.WriteByte(1, 20)
 				c.Memory.WriteShort(20, 1028)
 				c.Memory.WriteByte(1048, val)
+			}
+		}
+	}
+}
+
+func writeUint16ToAddress(c *cpu.Cpu, mode cpu.AddressMode, val uint16) {
+	switch mode {
+	case cpu.AddressModeAccumulator:
+		panic(fmt.Errorf("cannot set accumulator to a uint16"))
+	default:
+		{
+			switch mode {
+			case cpu.AddressModeImmediate:
+				c.Registers.PC = 0
+				c.Memory.WriteShort(1, val)
+
+			case cpu.AddressModeZeroPage:
+				c.Registers.PC = 0
+				c.Memory.WriteByte(1, 30)
+				c.Memory.WriteShort(30, val)
+
+			case cpu.AddressModeZeroPageX:
+				c.Registers.PC = 0
+				c.Registers.X = 5
+				c.Memory.WriteByte(1, 30)
+				c.Memory.WriteShort(35, val)
+
+			case cpu.AddressModeAbsolute:
+				c.Registers.PC = 0
+				c.Memory.WriteShort(1, 300)
+				c.Memory.WriteShort(300, val)
+
+			case cpu.AddressModeAbsoluteX:
+				c.Registers.PC = 0
+				c.Registers.X = 5
+				c.Memory.WriteShort(1, 300)
+				c.Memory.WriteShort(305, val)
+
+			case cpu.AddressModeAbsoluteY:
+				c.Registers.PC = 0
+				c.Registers.Y = 10
+				c.Memory.WriteShort(1, 300)
+				c.Memory.WriteShort(310, val)
+
+			case cpu.AddressModeIndirect:
+				c.Registers.PC = 0
+				c.Memory.WriteShort(1, 2048)
+				c.Memory.WriteShort(2048, val)
+
+			case cpu.AddressModeIndirectX:
+				c.Registers.PC = 0
+				c.Registers.X = 10
+				c.Memory.WriteByte(1, 20)
+				c.Memory.WriteShort(30, 2048)
+				c.Memory.WriteShort(2048, val)
+
+			case cpu.AddressModeIndirectY:
+				c.Registers.PC = 0
+				c.Registers.Y = 20
+				c.Memory.WriteByte(1, 20)
+				c.Memory.WriteShort(20, 1028)
+				c.Memory.WriteShort(1048, val)
 			}
 		}
 	}
@@ -618,5 +686,27 @@ func TestInc(t *testing.T) {
 		assert.Equalf(t, byte(0x00), test.read(c, test.mode), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+	}
+}
+
+func TestJmp(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	testCases := []struct {
+		mode cpu.AddressMode
+	}{
+		{mode: cpu.AddressModeAbsolute},
+		{mode: cpu.AddressModeIndirect},
+	}
+
+	for _, test := range testCases {
+		// Zero
+		writeUint16ToAddress(c, test.mode, 0x1312)
+
+		cpu.Jmp(c, test.mode)
+
+		assert.Equalf(t, uint16(0x1312), c.Registers.PC, "Address Mode %s", test.mode.String())
 	}
 }

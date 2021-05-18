@@ -25,6 +25,8 @@ func (a *AddressMode) String() string {
 		return "AbsoluteX"
 	case AddressModeAbsoluteY:
 		return "AbsoluteY"
+	case AddressModeIndirect:
+		return "Indirect"
 	case AddressModeIndirectX:
 		return "IndirectX"
 	case AddressModeIndirectY:
@@ -46,6 +48,7 @@ const (
 	AddressModeAbsolute
 	AddressModeAbsoluteX
 	AddressModeAbsoluteY
+	AddressModeIndirect
 	AddressModeIndirectX
 	AddressModeIndirectY
 	AddressModeAccumulator
@@ -170,6 +173,9 @@ func init() {
 		0xE8: {Inst: Inx, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "INX"},
 		// Y + 1 -> Y
 		0xC8: {Inst: Iny, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "INY"},
+		// (PC+1) -> PCL (PC+2) -> PCH
+		0x4C: {Inst: Jmp, Length: 3, MinCycles: 3, AddressMode: AddressModeAbsolute, Name: "JMP Oper"},
+		0x6C: {Inst: Jmp, Length: 3, MinCycles: 5, AddressMode: AddressModeIndirect, Name: "JMP (Oper)"},
 	}
 }
 
@@ -194,14 +200,14 @@ func samePage(a, b uint16) bool {
 }
 
 func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
-	operand := c.Memory.ReadByte(c.Registers.PC + 1)
+	byteOperand := c.Memory.ReadByte(c.Registers.PC + 1)
 
 	switch addressMode {
 	case AddressModeImmediate:
 		return c.Registers.PC + 1
 
 	case AddressModeZeroPage:
-		return uint16(operand)
+		return uint16(byteOperand)
 
 	case AddressModeZeroPageX:
 		return uint16(c.Memory.ReadByte(c.Registers.PC+1)) + uint16(c.Registers.X)&0x00FF
@@ -223,11 +229,14 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		}
 		return address
 
+	case AddressModeIndirect:
+		return c.Memory.ReadUint16(c.Memory.ReadUint16(c.Registers.PC + 1))
+
 	case AddressModeIndirectX:
-		return c.Memory.ReadUint16(uint16(operand + c.Registers.X))
+		return c.Memory.ReadUint16(uint16(byteOperand + c.Registers.X))
 
 	case AddressModeIndirectY:
-		address := uint16(c.Memory.ReadUint16(uint16(operand))) + uint16(c.Registers.Y)
+		address := uint16(c.Memory.ReadUint16(uint16(byteOperand))) + uint16(c.Registers.Y)
 		if samePage(address, c.Registers.PC) {
 			c.ExtraTicks++
 		}
@@ -245,6 +254,16 @@ func (c *Cpu) readByte(mode AddressMode) byte {
 	default:
 		address := c.GetOprandAddress(mode)
 		return c.Memory.ReadByte(address)
+	}
+}
+
+func (c *Cpu) readUint16(mode AddressMode) uint16 {
+	switch mode {
+	case AddressModeAccumulator:
+		panic(fmt.Errorf("you can't read accumulator as uint16"))
+	default:
+		address := c.GetOprandAddress(mode)
+		return c.Memory.ReadUint16(address)
 	}
 }
 
@@ -479,4 +498,9 @@ func Inx(c *Cpu, mode AddressMode) {
 
 func Iny(c *Cpu, mode AddressMode) {
 	c.Registers.Y = incerment(c, c.Registers.Y)
+}
+
+func Jmp(c *Cpu, mode AddressMode) {
+	operand := c.readUint16(mode)
+	c.Registers.PC = operand
 }

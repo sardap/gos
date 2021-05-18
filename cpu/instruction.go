@@ -173,9 +173,11 @@ func init() {
 		0xE8: {Inst: Inx, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "INX"},
 		// Y + 1 -> Y
 		0xC8: {Inst: Iny, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "INY"},
-		// (PC+1) -> PCL (PC+2) -> PCH
-		0x4C: {Inst: Jmp, Length: 3, MinCycles: 3, AddressMode: AddressModeAbsolute, Name: "JMP Oper"},
-		0x6C: {Inst: Jmp, Length: 3, MinCycles: 5, AddressMode: AddressModeIndirect, Name: "JMP (Oper)"},
+		// (PC+1) -> PCL; (PC+2) -> PCH
+		0x4C: {Inst: Jmp, Length: 3, MinCycles: 3, AddressMode: AddressModeAbsolute, Name: "JMP oper"},
+		0x6C: {Inst: Jmp, Length: 3, MinCycles: 5, AddressMode: AddressModeIndirect, Name: "JMP (oper)"},
+		// push (PC+2); (PC+1) -> PCL; (PC+2) -> PCH
+		0x20: {Inst: Jsr, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "JSR oper"},
 	}
 }
 
@@ -501,6 +503,10 @@ func Iny(c *Cpu, mode AddressMode) {
 }
 
 func Jmp(c *Cpu, mode AddressMode) {
-	operand := c.readUint16(mode)
-	c.Registers.PC = operand
+	c.Registers.PC = c.readUint16(mode)
+}
+
+func Jsr(c *Cpu, mode AddressMode) {
+	c.PushUint16(c.Registers.PC + 2)
+	c.Registers.PC = c.readUint16(mode)
 }

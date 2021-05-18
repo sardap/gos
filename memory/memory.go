@@ -5,6 +5,10 @@ import (
 	"fmt"
 )
 
+const (
+	StackOffset = 0x0100
+)
+
 type Memory struct {
 	iRam [0x07D0]byte
 }

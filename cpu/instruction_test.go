@@ -702,11 +702,23 @@ func TestJmp(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		// Zero
 		writeUint16ToAddress(c, test.mode, 0x1312)
 
 		cpu.Jmp(c, test.mode)
 
 		assert.Equalf(t, uint16(0x1312), c.Registers.PC, "Address Mode %s", test.mode.String())
 	}
+}
+
+func TestJsr(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	writeUint16ToAddress(c, cpu.AddressModeAbsolute, 0x1312)
+
+	cpu.Jsr(c, cpu.AddressModeAbsolute)
+
+	assert.Equal(t, uint16(0x1312), c.Registers.PC)
+	assert.Equal(t, uint16(0x0002), c.PopUint16())
 }

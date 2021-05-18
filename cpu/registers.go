@@ -7,7 +7,7 @@ const (
 	StartingX  = 0
 	StartingY  = 0
 	StartingPC = 0
-	StartingSP = 0
+	StartingSP = 0xFF
 	StartingP  = 0
 )
 
@@ -75,7 +75,7 @@ func CreateRegisters() *Registers {
 		X:  StartingX,
 		Y:  StartingY,
 		PC: StartingPC,
-		SP: StartingA,
+		SP: StartingSP,
 		P:  &FlagRegister{ByteRegister: &ByteRegister{val: StartingP}},
 	}
 }

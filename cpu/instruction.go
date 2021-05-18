@@ -146,8 +146,8 @@ func init() {
 		// M - 1 -> M
 		0xC6: {Inst: Dec, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "DEC oper"},
 		0xD6: {Inst: Dec, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "DEC oper,X"},
-		0xCE: {Inst: Dec, Length: 2, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "DEC oper"},
-		0xDE: {Inst: Dec, Length: 2, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "DEC oper,X"},
+		0xCE: {Inst: Dec, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "DEC oper"},
+		0xDE: {Inst: Dec, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "DEC oper,X"},
 		// X - 1 -> X
 		0xCA: {Inst: Dex, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "DEX"},
 		// Y - 1 -> Y
@@ -161,6 +161,15 @@ func init() {
 		0x59: {Inst: Eor, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "EOR oper,Y"}, //Extra cycles
 		0x41: {Inst: Eor, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "EOR (oper,X)"},
 		0x51: {Inst: Eor, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "EOR (oper),Y"}, //Extra cycles
+		// M + 1 -> M
+		0xE6: {Inst: Inc, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "INC oper"},
+		0xF6: {Inst: Inc, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "INC oper,X"},
+		0xEE: {Inst: Inc, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "INC oper"},
+		0xFE: {Inst: Inc, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "INC oper,X"},
+		// X + 1 -> X
+		0xE8: {Inst: Inx, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "INX"},
+		// Y + 1 -> Y
+		0xC8: {Inst: Iny, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "INY"},
 	}
 }
 
@@ -447,4 +456,27 @@ func Eor(c *Cpu, mode AddressMode) {
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
 
 	c.Registers.A ^= operand
+}
+
+func incerment(c *Cpu, value uint8) uint8 {
+	result := value + 1
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(result)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
+
+	return result
+}
+
+func Inc(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+	result := incerment(c, operand)
+	c.writeByte(mode, result)
+}
+
+func Inx(c *Cpu, mode AddressMode) {
+	c.Registers.X = incerment(c, c.Registers.X)
+}
+
+func Iny(c *Cpu, mode AddressMode) {
+	c.Registers.Y = incerment(c, c.Registers.Y)
 }

@@ -12,6 +12,25 @@ func createCpu() *cpu.Cpu {
 	return cpu.CreateCpu(memory.Create())
 }
 
+type writeFunc func(c *cpu.Cpu, mode cpu.AddressMode, val byte)
+type readFunc func(c *cpu.Cpu, mode cpu.AddressMode) byte
+
+func writeX(c *cpu.Cpu, _ cpu.AddressMode, val byte) {
+	c.Registers.X = val
+}
+
+func readX(c *cpu.Cpu, _ cpu.AddressMode) byte {
+	return c.Registers.X
+}
+
+func writeY(c *cpu.Cpu, _ cpu.AddressMode, val byte) {
+	c.Registers.Y = val
+}
+
+func readY(c *cpu.Cpu, _ cpu.AddressMode) byte {
+	return c.Registers.Y
+}
+
 func writeByteToAddress(c *cpu.Cpu, mode cpu.AddressMode, val byte) {
 	switch mode {
 	case cpu.AddressModeAccumulator:
@@ -455,25 +474,6 @@ func TestDec(t *testing.T) {
 
 	c := createCpu()
 
-	type writeFunc func(c *cpu.Cpu, mode cpu.AddressMode, val byte)
-	type readFunc func(c *cpu.Cpu, mode cpu.AddressMode) byte
-
-	writeX := func(c *cpu.Cpu, _ cpu.AddressMode, val byte) {
-		c.Registers.X = val
-	}
-
-	readX := func(c *cpu.Cpu, _ cpu.AddressMode) byte {
-		return c.Registers.X
-	}
-
-	writeY := func(c *cpu.Cpu, _ cpu.AddressMode, val byte) {
-		c.Registers.Y = val
-	}
-
-	readY := func(c *cpu.Cpu, _ cpu.AddressMode) byte {
-		return c.Registers.Y
-	}
-
 	testCases := []struct {
 		mode  cpu.AddressMode
 		write writeFunc
@@ -578,5 +578,45 @@ func TestEor(t *testing.T) {
 		assert.Equalf(t, uint8(0b01001000), c.Registers.A, "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+	}
+}
+
+func TestInc(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	testCases := []struct {
+		mode  cpu.AddressMode
+		write writeFunc
+		read  readFunc
+		inst  cpu.Instruction
+	}{
+		{inst: cpu.Inc, write: writeByteToAddress, read: readByteFromAddress, mode: cpu.AddressModeZeroPage},
+		{inst: cpu.Inc, write: writeByteToAddress, read: readByteFromAddress, mode: cpu.AddressModeZeroPageX},
+		{inst: cpu.Inc, write: writeByteToAddress, read: readByteFromAddress, mode: cpu.AddressModeAbsolute},
+		{inst: cpu.Inc, write: writeByteToAddress, read: readByteFromAddress, mode: cpu.AddressModeAbsoluteX},
+		{inst: cpu.Inx, write: writeX, read: readX, mode: cpu.AddressModeImplied},
+		{inst: cpu.Iny, write: writeY, read: readY, mode: cpu.AddressModeImplied},
+	}
+
+	for _, test := range testCases {
+		// basic dec
+		test.write(c, test.mode, 3)
+
+		test.inst(c, test.mode)
+
+		assert.Equalf(t, byte(4), test.read(c, test.mode), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+
+		// Wrap
+		test.write(c, test.mode, 0xFF)
+
+		test.inst(c, test.mode)
+
+		assert.Equalf(t, byte(0x00), test.read(c, test.mode), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
 	}
 }

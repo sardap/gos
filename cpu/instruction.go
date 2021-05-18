@@ -152,6 +152,15 @@ func init() {
 		0xCA: {Inst: Dex, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "DEX"},
 		// Y - 1 -> Y
 		0x88: {Inst: Dey, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "DEY"},
+		// A EOR M -> A
+		0x49: {Inst: Eor, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "EOR #oper"},
+		0x45: {Inst: Eor, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "EOR oper"},
+		0x55: {Inst: Eor, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "EOR oper,X"},
+		0x4D: {Inst: Eor, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "EOR oper"},
+		0x5D: {Inst: Eor, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "EOR oper,X"}, //Extra cycles
+		0x59: {Inst: Eor, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "EOR oper,Y"}, //Extra cycles
+		0x41: {Inst: Eor, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "EOR (oper,X)"},
+		0x51: {Inst: Eor, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "EOR (oper),Y"}, //Extra cycles
 	}
 }
 
@@ -427,4 +436,15 @@ func Dex(c *Cpu, mode AddressMode) {
 
 func Dey(c *Cpu, mode AddressMode) {
 	c.Registers.Y = decerment(c, c.Registers.Y)
+}
+
+func Eor(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+
+	result := c.Registers.A ^ operand
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(result)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
+
+	c.Registers.A ^= operand
 }

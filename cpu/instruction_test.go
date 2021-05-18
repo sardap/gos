@@ -517,3 +517,66 @@ func TestDec(t *testing.T) {
 		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
 	}
 }
+
+func TestEor(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	testCases := []struct {
+		mode cpu.AddressMode
+	}{
+		{mode: cpu.AddressModeImmediate},
+		{mode: cpu.AddressModeZeroPage},
+		{mode: cpu.AddressModeZeroPageX},
+		{mode: cpu.AddressModeAbsolute},
+		{mode: cpu.AddressModeAbsoluteX},
+		{mode: cpu.AddressModeAbsoluteY},
+		{mode: cpu.AddressModeIndirectX},
+		{mode: cpu.AddressModeIndirectY},
+	}
+
+	for _, test := range testCases {
+		c.Registers.P.Write(0)
+
+		// Zero
+		writeByteToAddress(c, test.mode, 0b00000000)
+		c.Registers.A = 0b00000000
+
+		cpu.Eor(c, test.mode)
+
+		assert.Equalf(t, uint8(0), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+
+		// Zero
+		writeByteToAddress(c, test.mode, 0b11111111)
+		c.Registers.A = 0b11111111
+
+		cpu.Eor(c, test.mode)
+
+		assert.Equalf(t, uint8(0), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+
+		// Negative
+		writeByteToAddress(c, test.mode, 0b01111111)
+		c.Registers.A = 0b11111111
+
+		cpu.Eor(c, test.mode)
+
+		assert.Equalf(t, uint8(0b10000000), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+
+		// Good old Xor
+		writeByteToAddress(c, test.mode, 0b00011010)
+		c.Registers.A = 0b01010010
+
+		cpu.Eor(c, test.mode)
+
+		assert.Equalf(t, uint8(0b01001000), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+	}
+}

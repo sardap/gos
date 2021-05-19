@@ -6,7 +6,7 @@ type Cpu struct {
 	Registers  *Registers
 	Memory     *memory.Memory
 	Ticks      int
-	ExtraTicks byte
+	ExtraCycles byte
 }
 
 func CreateCpu(mem *memory.Memory) *Cpu {

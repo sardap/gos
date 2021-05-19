@@ -54,6 +54,12 @@ func writeByteToAddress(c *cpu.Cpu, mode cpu.AddressMode, val byte) {
 				c.Memory.WriteByte(1, 30)
 				c.Memory.WriteByte(35, val)
 
+			case cpu.AddressModeZeroPageY:
+				c.Registers.PC = 0
+				c.Registers.Y = 15
+				c.Memory.WriteByte(1, 30)
+				c.Memory.WriteByte(45, val)
+
 			case cpu.AddressModeAbsolute:
 				c.Registers.PC = 0
 				c.Memory.WriteShort(1, 300)
@@ -305,47 +311,47 @@ func TestBranchFlags(t *testing.T) {
 	for _, test := range testCases {
 		//Branch postive on same page
 		c.Registers.PC = 50
-		c.ExtraTicks = 0
+		c.ExtraCycles = 0
 		c.Memory.WriteByte(c.Registers.PC+1, 0b00000011)
 		c.Registers.P.SetFlag(test.flag, test.valid)
 
 		test.inscut(c, cpu.AddressModeRelative)
 
 		assert.Equal(t, uint16(53), c.Registers.PC)
-		assert.Equal(t, uint8(1), c.ExtraTicks)
+		assert.Equal(t, uint8(1), c.ExtraCycles)
 
 		//Branch Negtaive on same page
 		c.Registers.PC = 50
-		c.ExtraTicks = 0
+		c.ExtraCycles = 0
 		c.Memory.WriteByte(c.Registers.PC+1, 0b11111101)
 		c.Registers.P.SetFlag(test.flag, test.valid)
 
 		test.inscut(c, cpu.AddressModeRelative)
 
 		assert.Equal(t, uint16(47), c.Registers.PC)
-		assert.Equal(t, uint8(1), c.ExtraTicks)
+		assert.Equal(t, uint8(1), c.ExtraCycles)
 
 		//Branch to a new page
 		c.Registers.PC = 129
-		c.ExtraTicks = 0
+		c.ExtraCycles = 0
 		c.Memory.WriteByte(c.Registers.PC+1, 127)
 		c.Registers.P.SetFlag(test.flag, test.valid)
 
 		test.inscut(c, cpu.AddressModeRelative)
 
 		assert.Equal(t, uint16(256), c.Registers.PC)
-		assert.Equal(t, uint8(2), c.ExtraTicks)
+		assert.Equal(t, uint8(2), c.ExtraCycles)
 
 		//Don't branch to a new page
 		c.Registers.PC = 5
-		c.ExtraTicks = 0
+		c.ExtraCycles = 0
 		c.Memory.WriteByte(c.Registers.PC+1, 5)
 		c.Registers.P.SetFlag(test.flag, !test.valid)
 
 		test.inscut(c, cpu.AddressModeRelative)
 
 		assert.Equal(t, uint16(7), c.Registers.PC)
-		assert.Equal(t, uint8(0), c.ExtraTicks)
+		assert.Equal(t, uint8(0), c.ExtraCycles)
 	}
 }
 
@@ -721,4 +727,85 @@ func TestJsr(t *testing.T) {
 
 	assert.Equal(t, uint16(0x1312), c.Registers.PC)
 	assert.Equal(t, uint16(0x0002), c.PopUint16())
+}
+
+func TestLda(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	testCases := []struct {
+		mode       cpu.AddressMode
+		extraCycle bool
+		inst       cpu.Instruction
+		reg        *byte
+	}{
+		// LDA
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeImmediate, extraCycle: false},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeZeroPage, extraCycle: false},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeZeroPageX, extraCycle: false},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsolute, extraCycle: false},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsoluteX, extraCycle: true},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsoluteY, extraCycle: true},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeIndirectX, extraCycle: false},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeIndirectY, extraCycle: true},
+		// LDX
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeImmediate, extraCycle: false},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeZeroPage, extraCycle: false},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeZeroPageY, extraCycle: false},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeAbsolute, extraCycle: false},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeAbsoluteY, extraCycle: true},
+		// LDY
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeImmediate, extraCycle: false},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeZeroPage, extraCycle: false},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeZeroPageX, extraCycle: false},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeAbsolute, extraCycle: false},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeAbsoluteX, extraCycle: true},
+	}
+
+	for _, test := range testCases {
+		c.Registers.P.Write(0)
+
+		// Clean load
+		c.ExtraCycles = 0
+		writeByteToAddress(c, test.mode, 0b00100000)
+		*test.reg = 10
+
+		test.inst(c, test.mode)
+
+		assert.Equalf(t, byte(0b00100000), *test.reg, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+		if test.extraCycle {
+			assert.Equalf(t, byte(1), c.ExtraCycles, "Address Mode %s", test.mode.String())
+		}
+
+		// Load zero
+		c.ExtraCycles = 0
+		writeByteToAddress(c, test.mode, 0b00000000)
+		*test.reg = 10
+
+		test.inst(c, test.mode)
+
+		assert.Equalf(t, byte(0b00000000), *test.reg, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+		if test.extraCycle {
+			assert.Equalf(t, byte(1), c.ExtraCycles, "Address Mode %s", test.mode.String())
+		}
+
+		// Neg load
+		c.ExtraCycles = 0
+		writeByteToAddress(c, test.mode, 0b10000000)
+		*test.reg = 10
+
+		test.inst(c, test.mode)
+
+		assert.Equalf(t, byte(0b10000000), *test.reg, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+		if test.extraCycle {
+			assert.Equalf(t, byte(1), c.ExtraCycles, "Address Mode %s", test.mode.String())
+		}
+	}
 }

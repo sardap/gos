@@ -178,6 +178,27 @@ func init() {
 		0x6C: {Inst: Jmp, Length: 3, MinCycles: 5, AddressMode: AddressModeIndirect, Name: "JMP (oper)"},
 		// push (PC+2); (PC+1) -> PCL; (PC+2) -> PCH
 		0x20: {Inst: Jsr, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "JSR oper"},
+		// M -> A
+		0xA9: {Inst: Lda, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "LDA #oper"},
+		0xA5: {Inst: Lda, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LDA oper"},
+		0xB5: {Inst: Lda, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "LDA oper,X"},
+		0xAD: {Inst: Lda, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LDA oper"},
+		0xBD: {Inst: Lda, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "LDA oper,X"}, // Extra Cycles
+		0xB9: {Inst: Lda, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "LDA oper,Y"}, // Extra Cycles
+		0xA1: {Inst: Lda, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "LDA (oper,X)"},
+		0xB1: {Inst: Lda, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "LDA (oper),Y"}, // Extra Cycles
+		// M -> X
+		0xA2: {Inst: Ldx, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "LDX #oper"},
+		0xA6: {Inst: Ldx, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LDX oper"},
+		0xB6: {Inst: Ldx, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "LDX oper,Y"},
+		0xAE: {Inst: Ldx, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LDX oper"},
+		0xBE: {Inst: Ldx, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "LDX oper,Y"}, // Extra Cycles
+		// M -> Y
+		0xA0: {Inst: Ldy, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "LDY #oper"},
+		0xA4: {Inst: Ldy, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LDY oper"},
+		0xB4: {Inst: Ldy, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "LDY oper,X"},
+		0xAC: {Inst: Ldy, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LDY oper"},
+		0xBC: {Inst: Ldy, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "LDY oper,X"}, // Extra Cycles
 	}
 }
 
@@ -214,20 +235,23 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 	case AddressModeZeroPageX:
 		return uint16(c.Memory.ReadByte(c.Registers.PC+1)) + uint16(c.Registers.X)&0x00FF
 
+	case AddressModeZeroPageY:
+		return uint16(c.Memory.ReadByte(c.Registers.PC+1)) + uint16(c.Registers.Y)&0x00FF
+
 	case AddressModeAbsolute:
 		return c.Memory.ReadUint16(c.Registers.PC + 1)
 
 	case AddressModeAbsoluteX:
 		address := c.Memory.ReadUint16(c.Registers.PC+1) + uint16(c.Registers.X)
 		if samePage(address, c.Registers.PC) {
-			c.ExtraTicks++
+			c.ExtraCycles++
 		}
 		return address
 
 	case AddressModeAbsoluteY:
 		address := c.Memory.ReadUint16(c.Registers.PC+1) + uint16(c.Registers.Y)
 		if samePage(address, c.Registers.PC) {
-			c.ExtraTicks++
+			c.ExtraCycles++
 		}
 		return address
 
@@ -240,7 +264,7 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 	case AddressModeIndirectY:
 		address := uint16(c.Memory.ReadUint16(uint16(byteOperand))) + uint16(c.Registers.Y)
 		if samePage(address, c.Registers.PC) {
-			c.ExtraTicks++
+			c.ExtraCycles++
 		}
 		return address
 
@@ -352,9 +376,9 @@ func branchOnFlag(c *Cpu, flag bool) {
 		oldPage := orginalAddress / 256
 		newPage := c.Registers.PC / 256
 		if oldPage == newPage {
-			c.ExtraTicks++
+			c.ExtraCycles++
 		} else {
-			c.ExtraTicks += 2
+			c.ExtraCycles += 2
 		}
 	} else {
 		c.Registers.PC += 2
@@ -509,4 +533,28 @@ func Jmp(c *Cpu, mode AddressMode) {
 func Jsr(c *Cpu, mode AddressMode) {
 	c.PushUint16(c.Registers.PC + 2)
 	c.Registers.PC = c.readUint16(mode)
+}
+
+func Lda(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+	c.Registers.A = operand
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(operand)))
+}
+
+func Ldx(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+	c.Registers.X = operand
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(operand)))
+}
+
+func Ldy(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+	c.Registers.Y = operand
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(operand)))
 }

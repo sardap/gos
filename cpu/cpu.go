@@ -3,9 +3,9 @@ package cpu
 import "github.com/sardap/gos/memory"
 
 type Cpu struct {
-	Registers  *Registers
-	Memory     *memory.Memory
-	Ticks      int
+	Registers   *Registers
+	Memory      *memory.Memory
+	Ticks       int
 	ExtraCycles byte
 }
 
@@ -23,8 +23,8 @@ func (c *Cpu) PushByte(value byte) {
 }
 
 func (c *Cpu) PopByte() byte {
-	result := c.Memory.ReadByte(memory.StackOffset + uint16(c.Registers.SP))
 	c.Registers.SP++
+	result := c.Memory.ReadByte(memory.StackOffset + uint16(c.Registers.SP))
 	return result
 }
 

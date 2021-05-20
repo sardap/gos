@@ -199,6 +199,47 @@ func init() {
 		0xB4: {Inst: Ldy, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "LDY oper,X"},
 		0xAC: {Inst: Ldy, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LDY oper"},
 		0xBC: {Inst: Ldy, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "LDY oper,X"}, // Extra Cycles
+		// 0 -> [76543210] -> C
+		0x4A: {Inst: Lsr, Length: 1, MinCycles: 2, AddressMode: AddressModeAccumulator, Name: "LSR A"},
+		0x46: {Inst: Lsr, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "LSR oper"},
+		0x56: {Inst: Lsr, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "LSR oper,X"},
+		0x4E: {Inst: Lsr, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "LSR oper"},
+		0x5E: {Inst: Lsr, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "LSR oper,X"},
+		// No Operation
+		0xEA: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "NOP"}, // Extra Cycles
+		// A OR M -> A
+		0x09: {Inst: Ora, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "ORA #oper"},
+		0x05: {Inst: Ora, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "ORA oper"},
+		0x15: {Inst: Ora, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "ORA oper,X"},
+		0x0D: {Inst: Ora, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "ORA oper"},
+		0x1D: {Inst: Ora, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "ORA oper,X"}, //Extra cycles
+		0x19: {Inst: Ora, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "ORA oper,Y"}, //Extra cycles
+		0x01: {Inst: Ora, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "ORA (oper,X)"},
+		0x11: {Inst: Ora, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "ORA (oper),Y"}, //Extra cycles
+		// push A
+		0x48: {Inst: Pha, Length: 1, MinCycles: 3, AddressMode: AddressModeImplied, Name: "PHA"},
+		// push SR
+		0x08: {Inst: Php, Length: 1, MinCycles: 3, AddressMode: AddressModeImplied, Name: "PHP"},
+		// pull A
+		0x68: {Inst: Pla, Length: 1, MinCycles: 4, AddressMode: AddressModeImplied, Name: "PLA"},
+		// pull SR
+		0x28: {Inst: Plp, Length: 1, MinCycles: 4, AddressMode: AddressModeImplied, Name: "PLP"},
+		// c <- [76543210] <- c
+		0x2A: {Inst: Rol, Length: 1, MinCycles: 2, AddressMode: AddressModeAccumulator, Name: "ROL A"},
+		0x26: {Inst: Rol, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "ROL oper"},
+		0x36: {Inst: Rol, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "ROL oper,X"},
+		0x2E: {Inst: Rol, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "ROL oper"},
+		0x3E: {Inst: Rol, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "ROL oper,X"},
+		// c -> [76543210] -> c
+		0x6A: {Inst: Ror, Length: 1, MinCycles: 2, AddressMode: AddressModeAccumulator, Name: "ROR A"},
+		0x66: {Inst: Ror, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "ROR oper"},
+		0x76: {Inst: Ror, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "ROR oper,X"},
+		0x6E: {Inst: Ror, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "ROR oper"},
+		0x7E: {Inst: Ror, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "ROR oper,X"},
+		// pull SR; pull PC
+		0x40: {Inst: Rti, Length: 1, MinCycles: 6, AddressMode: AddressModeImplied, Name: "RTI"},
+		// pull PC, PC+1 -> PC
+		0x60: {Inst: Rts, Length: 1, MinCycles: 6, AddressMode: AddressModeImplied, Name: "RTS"},
 	}
 }
 
@@ -312,7 +353,7 @@ func overflowHappend(left, right, result byte) bool {
 	return false
 }
 
-func carryHappend(result uint16) bool {
+func postiveCarryHappend(result uint16) bool {
 	return result&0xFF00 > 0
 }
 
@@ -338,7 +379,7 @@ func Adc(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(result))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
-	c.Registers.P.SetFlag(FlagCarry, carryHappend(result))
+	c.Registers.P.SetFlag(FlagCarry, postiveCarryHappend(result))
 	c.Registers.P.SetFlag(FlagOverflow, overflowHappend(a, oprand, byte(result)))
 
 	c.Registers.A = byte(result)
@@ -363,7 +404,7 @@ func Asl(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(result))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
-	c.Registers.P.SetFlag(FlagCarry, carryHappend(result))
+	c.Registers.P.SetFlag(FlagCarry, postiveCarryHappend(result))
 
 	c.writeByte(mode, byte(result))
 }
@@ -557,4 +598,81 @@ func Ldy(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(operand)))
+}
+
+func Lsr(c *Cpu, mode AddressMode) {
+	oprand := c.readByte(mode)
+
+	result := uint16(oprand >> 1)
+
+	c.Registers.P.SetFlag(FlagNegative, false)
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
+	// this isn't a mistake
+	c.Registers.P.SetFlag(FlagCarry, result == 0)
+
+	c.writeByte(mode, byte(result))
+}
+
+func Nop(c *Cpu, mode AddressMode) {
+}
+
+func Ora(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+
+	result := c.Registers.A | operand
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(result)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
+
+	c.Registers.A = result
+}
+
+func Pha(c *Cpu, mode AddressMode) {
+	c.PushByte(c.Registers.A)
+}
+
+func Php(c *Cpu, mode AddressMode) {
+	c.PushByte(c.Registers.P.Read())
+}
+
+func Pla(c *Cpu, mode AddressMode) {
+	c.Registers.A = c.PopByte()
+}
+
+func Plp(c *Cpu, mode AddressMode) {
+	c.Registers.P.Write(c.PopByte())
+}
+
+func Rol(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+
+	result := (uint16(operand) << 1) | uint16(c.Registers.P.ReadFlagByte(FlagCarry))
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(result))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
+	c.Registers.P.SetFlag(FlagCarry, postiveCarryHappend(result))
+
+	c.writeByte(mode, byte(result))
+}
+
+func Ror(c *Cpu, mode AddressMode) {
+	operand := c.readByte(mode)
+
+	result := (uint16(operand) >> 1) | uint16(c.Registers.P.ReadFlagByte(FlagCarry)<<7)
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(result))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
+	c.Registers.P.SetFlag(FlagCarry, result&0b00000001 > 0)
+
+	c.writeByte(mode, byte(result))
+}
+
+func Rti(c *Cpu, mode AddressMode) {
+	c.Registers.P.Write(c.PopByte())
+	c.Registers.PC = c.PopUint16()
+}
+
+func Rts(c *Cpu, mode AddressMode) {
+	c.Registers.PC = c.PopUint16()
+	c.Registers.PC++
 }

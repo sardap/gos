@@ -250,10 +250,8 @@ func TestAnd(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		address := c.GetOprandAddress(test.mode)
+		writeByteToAddress(c, test.mode, 0b00001111)
 		c.Registers.P.Write(0)
-
-		c.Memory.WriteByte(address, 0b00001111)
 		c.Registers.A = 0b10000101
 
 		cpu.And(c, test.mode)
@@ -1165,6 +1163,7 @@ func TestSta(t *testing.T) {
 	t.Parallel()
 
 	c := createCpu()
+	c.Registers.PC = 0
 
 	testCases := []struct {
 		mode cpu.AddressMode
@@ -1191,6 +1190,7 @@ func TestStx(t *testing.T) {
 	t.Parallel()
 
 	c := createCpu()
+	c.Registers.PC = 0
 
 	testCases := []struct {
 		mode cpu.AddressMode
@@ -1213,6 +1213,7 @@ func TestSty(t *testing.T) {
 	t.Parallel()
 
 	c := createCpu()
+	c.Registers.PC = 0
 
 	testCases := []struct {
 		mode cpu.AddressMode

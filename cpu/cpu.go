@@ -7,6 +7,7 @@ type Cpu struct {
 	Memory      *memory.Memory
 	Ticks       int
 	ExtraCycles byte
+	Interupt    bool
 }
 
 func CreateCpu(mem *memory.Memory) *Cpu {

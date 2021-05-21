@@ -6,9 +6,9 @@ const (
 	StartingA  = 0
 	StartingX  = 0
 	StartingY  = 0
-	StartingPC = 0
+	StartingPC = 0xC000
 	StartingSP = 0xFF
-	StartingP  = 0
+	StartingP  = 0x24
 )
 
 type ByteRegister struct {

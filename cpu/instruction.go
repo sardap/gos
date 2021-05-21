@@ -2,7 +2,9 @@ package cpu
 
 import (
 	"fmt"
+	"log"
 	"math"
+	"strings"
 
 	nesmath "github.com/sardap/gos/math"
 )
@@ -62,8 +64,8 @@ type Instruction func(c *Cpu, mode AddressMode)
 type Operation struct {
 	Name        string
 	Inst        Instruction
-	Length      byte
-	MinCycles   byte
+	Length      uint16
+	MinCycles   int
 	AddressMode AddressMode
 }
 
@@ -113,6 +115,8 @@ func init() {
 		0xD0: {Inst: Bne, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BNE oper"},
 		// Branch on Result Plus
 		0x10: {Inst: Bpl, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BPL oper"},
+		// interrupt; push PC+2; push SR
+		0x00: {Inst: Brk, Length: 1, MinCycles: 7, AddressMode: AddressModeImplied, Name: "BRK"},
 		// Branch on Overflow Clear
 		0x50: {Inst: Bvc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVC oper"},
 		// Branch on Overflow Set
@@ -174,8 +178,8 @@ func init() {
 		// Y + 1 -> Y
 		0xC8: {Inst: Iny, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "INY"},
 		// (PC+1) -> PCL; (PC+2) -> PCH
-		0x4C: {Inst: Jmp, Length: 3, MinCycles: 3, AddressMode: AddressModeAbsolute, Name: "JMP oper"},
-		0x6C: {Inst: Jmp, Length: 3, MinCycles: 5, AddressMode: AddressModeIndirect, Name: "JMP (oper)"},
+		0x4C: {Inst: Jmp, Length: 0, MinCycles: 3, AddressMode: AddressModeAbsolute, Name: "JMP oper"},
+		0x6C: {Inst: Jmp, Length: 0, MinCycles: 5, AddressMode: AddressModeIndirect, Name: "JMP (oper)"},
 		// push (PC+2); (PC+1) -> PCL; (PC+2) -> PCH
 		0x20: {Inst: Jsr, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "JSR oper"},
 		// M -> A
@@ -292,14 +296,60 @@ func GetOpcodes() map[byte]*Operation {
 
 func (c *Cpu) Excute() {
 	opcode := c.Memory.ReadByte(c.Registers.PC)
-	oprand1 := c.Memory.ReadByte(c.Registers.PC + 1)
-	oprand2 := c.Memory.ReadByte(c.Registers.PC + 2)
 
-	operation := opcodes[opcode]
+	operation, ok := opcodes[opcode]
+	if !ok {
+		panic(fmt.Errorf("unkown opcode %02X", opcode))
+	}
+
+	var builder strings.Builder
+
+	builder.WriteString(fmt.Sprintf("%04X  ", c.Registers.PC))
+	builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByte(c.Registers.PC)))
+	if operation.Length >= 2 {
+		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByte(c.Registers.PC+1)))
+	}
+	if operation.Length >= 3 {
+		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByte(c.Registers.PC+2)))
+	}
+	for builder.Len() < 16 {
+		builder.WriteString(" ")
+	}
+
+	builder.WriteString(strings.Split(operation.Name, " ")[0])
+	builder.WriteString(" ")
+	if operation.Length >= 2 {
+		if operation.AddressMode == AddressModeImmediate {
+			builder.WriteString("#$")
+		} else {
+			builder.WriteString("$")
+		}
+		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByte(c.Registers.PC+2)))
+	}
+	if operation.Length >= 3 {
+		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByte(c.Registers.PC+3)))
+	}
+
+	for builder.Len() < 48 {
+		builder.WriteString(" ")
+	}
+
+	builder.WriteString(
+		fmt.Sprintf(
+			"A:%02X X:%02X Y:%02X P:%02X SP:%02X ",
+			c.Registers.A, c.Registers.X, c.Registers.Y,
+			c.Registers.P.Read(), c.Registers.SP,
+		),
+	)
+
+	builder.WriteString("\n")
+
+	log.Print(builder.String())
 
 	operation.Inst(c, operation.AddressMode)
 
-	fmt.Printf("%02X %02X %02X\n", opcode, oprand1, oprand2)
+	c.Registers.PC += operation.Length
+	c.Ticks += operation.MinCycles
 }
 
 func samePage(a, b uint16) bool {
@@ -491,6 +541,12 @@ func Bne(c *Cpu, mode AddressMode) {
 
 func Bpl(c *Cpu, mode AddressMode) {
 	branchOnFlag(c, !c.Registers.P.ReadFlag(FlagNegative))
+}
+
+func Brk(c *Cpu, mode AddressMode) {
+	c.PushUint16(c.Registers.PC + 2)
+	c.PushByte(c.Registers.P.Read())
+	c.Interupt = true
 }
 
 func Bvc(c *Cpu, mode AddressMode) {

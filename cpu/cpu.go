@@ -19,13 +19,13 @@ func CreateCpu(mem *memory.Memory) *Cpu {
 }
 
 func (c *Cpu) PushByte(value byte) {
-	c.Memory.WriteByte(memory.StackOffset+uint16(c.Registers.SP), value)
+	c.Memory.WriteByteAt(memory.StackOffset+uint16(c.Registers.SP), value)
 	c.Registers.SP--
 }
 
 func (c *Cpu) PopByte() byte {
 	c.Registers.SP++
-	result := c.Memory.ReadByte(memory.StackOffset + uint16(c.Registers.SP))
+	result := c.Memory.ReadByteAt(memory.StackOffset + uint16(c.Registers.SP))
 	return result
 }
 

@@ -43,60 +43,60 @@ func writeByteToAddress(c *cpu.Cpu, mode cpu.AddressMode, val byte) {
 			switch mode {
 			case cpu.AddressModeImmediate:
 				c.Registers.PC = 0
-				c.Memory.WriteByte(1, val)
+				c.Memory.WriteByteAt(1, val)
 
 			case cpu.AddressModeZeroPage:
 				c.Registers.PC = 0
-				c.Memory.WriteByte(1, 30)
-				c.Memory.WriteByte(30, val)
+				c.Memory.WriteByteAt(1, 30)
+				c.Memory.WriteByteAt(30, val)
 
 			case cpu.AddressModeZeroPageX:
 				c.Registers.PC = 0
 				c.Registers.X = 5
-				c.Memory.WriteByte(1, 30)
-				c.Memory.WriteByte(35, val)
+				c.Memory.WriteByteAt(1, 30)
+				c.Memory.WriteByteAt(35, val)
 
 			case cpu.AddressModeZeroPageY:
 				c.Registers.PC = 0
 				c.Registers.Y = 15
-				c.Memory.WriteByte(1, 30)
-				c.Memory.WriteByte(45, val)
+				c.Memory.WriteByteAt(1, 30)
+				c.Memory.WriteByteAt(45, val)
 
 			case cpu.AddressModeAbsolute:
 				c.Registers.PC = 0
 				c.Memory.WriteShort(1, 300)
-				c.Memory.WriteByte(300, val)
+				c.Memory.WriteByteAt(300, val)
 
 			case cpu.AddressModeAbsoluteX:
 				c.Registers.PC = 0
 				c.Registers.X = 5
 				c.Memory.WriteShort(1, 300)
-				c.Memory.WriteByte(305, val)
+				c.Memory.WriteByteAt(305, val)
 
 			case cpu.AddressModeAbsoluteY:
 				c.Registers.PC = 0
 				c.Registers.Y = 10
 				c.Memory.WriteShort(1, 300)
-				c.Memory.WriteByte(310, val)
+				c.Memory.WriteByteAt(310, val)
 
 			case cpu.AddressModeIndirect:
 				c.Registers.PC = 0
 				c.Memory.WriteShort(1, 2048)
-				c.Memory.WriteByte(2048, val)
+				c.Memory.WriteByteAt(2048, val)
 
 			case cpu.AddressModeIndirectX:
 				c.Registers.PC = 0
 				c.Registers.X = 10
-				c.Memory.WriteByte(1, 20)
+				c.Memory.WriteByteAt(1, 20)
 				c.Memory.WriteShort(30, 2048)
-				c.Memory.WriteByte(2048, val)
+				c.Memory.WriteByteAt(2048, val)
 
 			case cpu.AddressModeIndirectY:
 				c.Registers.PC = 0
 				c.Registers.Y = 20
-				c.Memory.WriteByte(1, 20)
+				c.Memory.WriteByteAt(1, 20)
 				c.Memory.WriteShort(20, 1028)
-				c.Memory.WriteByte(1048, val)
+				c.Memory.WriteByteAt(1048, val)
 			}
 		}
 	}
@@ -115,13 +115,13 @@ func writeUint16ToAddress(c *cpu.Cpu, mode cpu.AddressMode, val uint16) {
 
 			case cpu.AddressModeZeroPage:
 				c.Registers.PC = 0
-				c.Memory.WriteByte(1, 30)
+				c.Memory.WriteByteAt(1, 30)
 				c.Memory.WriteShort(30, val)
 
 			case cpu.AddressModeZeroPageX:
 				c.Registers.PC = 0
 				c.Registers.X = 5
-				c.Memory.WriteByte(1, 30)
+				c.Memory.WriteByteAt(1, 30)
 				c.Memory.WriteShort(35, val)
 
 			case cpu.AddressModeAbsolute:
@@ -149,14 +149,14 @@ func writeUint16ToAddress(c *cpu.Cpu, mode cpu.AddressMode, val uint16) {
 			case cpu.AddressModeIndirectX:
 				c.Registers.PC = 0
 				c.Registers.X = 10
-				c.Memory.WriteByte(1, 20)
+				c.Memory.WriteByteAt(1, 20)
 				c.Memory.WriteShort(30, 2048)
 				c.Memory.WriteShort(2048, val)
 
 			case cpu.AddressModeIndirectY:
 				c.Registers.PC = 0
 				c.Registers.Y = 20
-				c.Memory.WriteByte(1, 20)
+				c.Memory.WriteByteAt(1, 20)
 				c.Memory.WriteShort(20, 1028)
 				c.Memory.WriteShort(1048, val)
 			}
@@ -169,7 +169,7 @@ func readByteFromAddress(c *cpu.Cpu, mode cpu.AddressMode) byte {
 	case cpu.AddressModeAccumulator:
 		return c.Registers.A
 	default:
-		return c.Memory.ReadByte(c.GetOprandAddress(mode))
+		return c.Memory.ReadByteAt(c.GetOprandAddress(mode))
 	}
 }
 
@@ -312,7 +312,7 @@ func TestBranchFlags(t *testing.T) {
 		//Branch postive on same page
 		c.Registers.PC = 50
 		c.ExtraCycles = 0
-		c.Memory.WriteByte(c.Registers.PC+1, 0b00000011)
+		c.Memory.WriteByteAt(c.Registers.PC+1, 0b00000011)
 		c.Registers.P.SetFlag(test.flag, test.valid)
 
 		test.inscut(c, cpu.AddressModeRelative)
@@ -323,7 +323,7 @@ func TestBranchFlags(t *testing.T) {
 		//Branch Negtaive on same page
 		c.Registers.PC = 50
 		c.ExtraCycles = 0
-		c.Memory.WriteByte(c.Registers.PC+1, 0b11111101)
+		c.Memory.WriteByteAt(c.Registers.PC+1, 0b11111101)
 		c.Registers.P.SetFlag(test.flag, test.valid)
 
 		test.inscut(c, cpu.AddressModeRelative)
@@ -334,7 +334,7 @@ func TestBranchFlags(t *testing.T) {
 		//Branch to a new page
 		c.Registers.PC = 129
 		c.ExtraCycles = 0
-		c.Memory.WriteByte(c.Registers.PC+1, 127)
+		c.Memory.WriteByteAt(c.Registers.PC+1, 127)
 		c.Registers.P.SetFlag(test.flag, test.valid)
 
 		test.inscut(c, cpu.AddressModeRelative)
@@ -345,7 +345,7 @@ func TestBranchFlags(t *testing.T) {
 		//Don't branch to a new page
 		c.Registers.PC = 5
 		c.ExtraCycles = 0
-		c.Memory.WriteByte(c.Registers.PC+1, 5)
+		c.Memory.WriteByteAt(c.Registers.PC+1, 5)
 		c.Registers.P.SetFlag(test.flag, !test.valid)
 
 		test.inscut(c, cpu.AddressModeRelative)

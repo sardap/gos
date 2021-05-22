@@ -295,7 +295,7 @@ func GetOpcodes() map[byte]*Operation {
 }
 
 func (c *Cpu) Excute() {
-	opcode := c.Memory.ReadByte(c.Registers.PC)
+	opcode := c.Memory.ReadByteAt(c.Registers.PC)
 
 	operation, ok := opcodes[opcode]
 	if !ok {
@@ -305,12 +305,12 @@ func (c *Cpu) Excute() {
 	var builder strings.Builder
 
 	builder.WriteString(fmt.Sprintf("%04X  ", c.Registers.PC))
-	builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByte(c.Registers.PC)))
+	builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByteAt(c.Registers.PC)))
 	if operation.Length >= 2 {
-		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByte(c.Registers.PC+1)))
+		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByteAt(c.Registers.PC+1)))
 	}
 	if operation.Length >= 3 {
-		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByte(c.Registers.PC+2)))
+		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByteAt(c.Registers.PC+2)))
 	}
 	for builder.Len() < 16 {
 		builder.WriteString(" ")
@@ -324,10 +324,10 @@ func (c *Cpu) Excute() {
 		} else {
 			builder.WriteString("$")
 		}
-		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByte(c.Registers.PC+1)))
-	}
-	if operation.Length >= 3 {
-		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByte(c.Registers.PC+2)))
+		if operation.Length >= 3 {
+			builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByteAt(c.Registers.PC+2)))
+		}
+		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByteAt(c.Registers.PC+1)))
 	}
 
 	for builder.Len() < 48 {
@@ -357,7 +357,7 @@ func samePage(a, b uint16) bool {
 }
 
 func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
-	byteOperand := c.Memory.ReadByte(c.Registers.PC + 1)
+	byteOperand := c.Memory.ReadByteAt(c.Registers.PC + 1)
 
 	switch addressMode {
 	case AddressModeImmediate:
@@ -367,10 +367,10 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return uint16(byteOperand)
 
 	case AddressModeZeroPageX:
-		return uint16(c.Memory.ReadByte(c.Registers.PC+1)) + uint16(c.Registers.X)&0x00FF
+		return uint16(c.Memory.ReadByteAt(c.Registers.PC+1)) + uint16(c.Registers.X)&0x00FF
 
 	case AddressModeZeroPageY:
-		return uint16(c.Memory.ReadByte(c.Registers.PC+1)) + uint16(c.Registers.Y)&0x00FF
+		return uint16(c.Memory.ReadByteAt(c.Registers.PC+1)) + uint16(c.Registers.Y)&0x00FF
 
 	case AddressModeAbsolute:
 		return c.Memory.ReadUint16(c.Registers.PC + 1)
@@ -414,7 +414,7 @@ func (c *Cpu) readByte(mode AddressMode) byte {
 		return c.Registers.A
 	default:
 		address := c.GetOprandAddress(mode)
-		return c.Memory.ReadByte(address)
+		return c.Memory.ReadByteAt(address)
 	}
 }
 
@@ -433,7 +433,7 @@ func (c *Cpu) writeByte(mode AddressMode, value byte) {
 	case AddressModeAccumulator:
 		c.Registers.A = value
 	default:
-		c.Memory.WriteByte(c.GetOprandAddress(mode), value)
+		c.Memory.WriteByteAt(c.GetOprandAddress(mode), value)
 	}
 }
 
@@ -506,7 +506,7 @@ func Asl(c *Cpu, mode AddressMode) {
 func branchOnFlag(c *Cpu, flag bool) {
 	orginalAddress := c.Registers.PC
 	if flag {
-		c.Registers.PC += uint16(int8(c.Memory.ReadByte(c.Registers.PC + 1)))
+		c.Registers.PC += uint16(int8(c.Memory.ReadByteAt(c.Registers.PC + 1)))
 
 		oldPage := orginalAddress / 256
 		newPage := c.Registers.PC / 256

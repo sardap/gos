@@ -24,7 +24,7 @@ func Create() *Memory {
 	return &Memory{}
 }
 
-func (m *Memory) WriteByte(address uint16, value byte) {
+func (m *Memory) WriteByteAt(address uint16, value byte) {
 	switch {
 	//Intenal Ram
 	case address >= 0x0000 && address <= 0x07FF:
@@ -57,11 +57,11 @@ func (m *Memory) WriteByte(address uint16, value byte) {
 }
 
 func (m *Memory) WriteShort(address, value uint16) {
-	m.WriteByte(address, byte(value&0x00FF))
-	m.WriteByte(address+1, byte(value>>8))
+	m.WriteByteAt(address, byte(value&0x00FF))
+	m.WriteByteAt(address+1, byte(value>>8))
 }
 
-func (m *Memory) ReadByte(address uint16) byte {
+func (m *Memory) ReadByteAt(address uint16) byte {
 	switch {
 	//Intenal Ram
 	case address >= 0x0000 && address <= 0x07FF:
@@ -97,7 +97,7 @@ func (m *Memory) ReadByte(address uint16) byte {
 
 func (m *Memory) ReadUint16(address uint16) uint16 {
 	return binary.LittleEndian.Uint16(
-		[]byte{m.ReadByte(address), m.ReadByte(address + 1)})
+		[]byte{m.ReadByteAt(address), m.ReadByteAt(address + 1)})
 }
 
 type bytesQueue struct {

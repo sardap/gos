@@ -11,8 +11,8 @@ import (
 
 type AddressMode int
 
-func (a *AddressMode) String() string {
-	switch *a {
+func (a AddressMode) String() string {
+	switch a {
 	case AddressModeImmediate:
 		return "Immediate"
 	case AddressModeZeroPage:
@@ -324,10 +324,10 @@ func (c *Cpu) Excute() {
 		} else {
 			builder.WriteString("$")
 		}
-		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByte(c.Registers.PC+2)))
+		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByte(c.Registers.PC+1)))
 	}
 	if operation.Length >= 3 {
-		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByte(c.Registers.PC+3)))
+		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByte(c.Registers.PC+2)))
 	}
 
 	for builder.Len() < 48 {
@@ -390,7 +390,8 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return address
 
 	case AddressModeIndirect:
-		return c.Memory.ReadUint16(c.Memory.ReadUint16(c.Registers.PC + 1))
+		operand := c.Memory.ReadUint16(c.Registers.PC + 1)
+		return c.Memory.ReadUint16(operand)
 
 	case AddressModeIndirectX:
 		return c.Memory.ReadUint16(uint16(byteOperand + c.Registers.X))
@@ -667,7 +668,7 @@ func Iny(c *Cpu, mode AddressMode) {
 }
 
 func Jmp(c *Cpu, mode AddressMode) {
-	c.Registers.PC = c.readUint16(mode)
+	c.Registers.PC = c.GetOprandAddress(mode)
 }
 
 func Jsr(c *Cpu, mode AddressMode) {

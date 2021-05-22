@@ -143,8 +143,8 @@ func writeUint16ToAddress(c *cpu.Cpu, mode cpu.AddressMode, val uint16) {
 
 			case cpu.AddressModeIndirect:
 				c.Registers.PC = 0
-				c.Memory.WriteShort(1, 2048)
-				c.Memory.WriteShort(2048, val)
+				c.Memory.WriteShort(c.Registers.PC+1, 1000)
+				c.Memory.WriteShort(1000, val)
 
 			case cpu.AddressModeIndirectX:
 				c.Registers.PC = 0
@@ -699,21 +699,20 @@ func TestJmp(t *testing.T) {
 	t.Parallel()
 
 	c := createCpu()
+	c.Registers.PC = 0
 
-	testCases := []struct {
-		mode cpu.AddressMode
-	}{
-		{mode: cpu.AddressModeAbsolute},
-		{mode: cpu.AddressModeIndirect},
-	}
+	c.Memory.WriteShort(1, 0x1312)
 
-	for _, test := range testCases {
-		writeUint16ToAddress(c, test.mode, 0x1312)
+	cpu.Jmp(c, cpu.AddressModeAbsolute)
 
-		cpu.Jmp(c, test.mode)
+	assert.Equal(t, uint16(0x1312), c.Registers.PC, "Address Mode ", cpu.AddressModeAbsolute.String())
 
-		assert.Equalf(t, uint16(0x1312), c.Registers.PC, "Address Mode %s", test.mode.String())
-	}
+	// Indirect
+	writeUint16ToAddress(c, cpu.AddressModeIndirect, 0x1312)
+
+	cpu.Jmp(c, cpu.AddressModeIndirect)
+
+	assert.Equal(t, uint16(0x1312), c.Registers.PC, "Address Mode ", cpu.AddressModeIndirect.String())
 }
 
 func TestJsr(t *testing.T) {

@@ -350,6 +350,10 @@ func (c *Cpu) Excute() {
 
 	c.Registers.PC += operation.Length
 	c.Ticks += operation.MinCycles
+
+	ppuWrites := c.Memory.PpuRegisters.GetPendingWrites()
+	c.Ppu.Step(ppuWrites)
+	c.Memory.PpuRegisters.ClearPendingWrites()
 }
 
 func samePage(a, b uint16) bool {
@@ -373,31 +377,31 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return uint16(c.Memory.ReadByteAt(c.Registers.PC+1)) + uint16(c.Registers.Y)&0x00FF
 
 	case AddressModeAbsolute:
-		return c.Memory.ReadUint16(c.Registers.PC + 1)
+		return c.Memory.ReadUint16At(c.Registers.PC + 1)
 
 	case AddressModeAbsoluteX:
-		address := c.Memory.ReadUint16(c.Registers.PC+1) + uint16(c.Registers.X)
+		address := c.Memory.ReadUint16At(c.Registers.PC+1) + uint16(c.Registers.X)
 		if samePage(address, c.Registers.PC) {
 			c.ExtraCycles++
 		}
 		return address
 
 	case AddressModeAbsoluteY:
-		address := c.Memory.ReadUint16(c.Registers.PC+1) + uint16(c.Registers.Y)
+		address := c.Memory.ReadUint16At(c.Registers.PC+1) + uint16(c.Registers.Y)
 		if samePage(address, c.Registers.PC) {
 			c.ExtraCycles++
 		}
 		return address
 
 	case AddressModeIndirect:
-		operand := c.Memory.ReadUint16(c.Registers.PC + 1)
-		return c.Memory.ReadUint16(operand)
+		operand := c.Memory.ReadUint16At(c.Registers.PC + 1)
+		return c.Memory.ReadUint16At(operand)
 
 	case AddressModeIndirectX:
-		return c.Memory.ReadUint16(uint16(byteOperand + c.Registers.X))
+		return c.Memory.ReadUint16At(uint16(byteOperand + c.Registers.X))
 
 	case AddressModeIndirectY:
-		address := uint16(c.Memory.ReadUint16(uint16(byteOperand))) + uint16(c.Registers.Y)
+		address := uint16(c.Memory.ReadUint16At(uint16(byteOperand))) + uint16(c.Registers.Y)
 		if samePage(address, c.Registers.PC) {
 			c.ExtraCycles++
 		}
@@ -424,7 +428,7 @@ func (c *Cpu) readUint16(mode AddressMode) uint16 {
 		panic(fmt.Errorf("you can't read accumulator as uint16"))
 	default:
 		address := c.GetOprandAddress(mode)
-		return c.Memory.ReadUint16(address)
+		return c.Memory.ReadUint16At(address)
 	}
 }
 

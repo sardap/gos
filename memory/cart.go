@@ -69,7 +69,7 @@ func createControlByte2(data byte) (*ControlByte2, error) {
 	} else if !nesmath.BitSet(data, 3) && !nesmath.BitSet(data, 2) {
 		result.INesFormat = INesFormatType1
 	} else {
-		return nil, InvalidRomErr
+		return nil, ErrInvalidRom
 	}
 
 	return result, nil

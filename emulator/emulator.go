@@ -6,17 +6,20 @@ import (
 
 	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/memory"
+	"github.com/sardap/gos/ppu"
 )
 
 type Emulator struct {
-	cpu    *cpu.Cpu
 	memory *memory.Memory
+	ppu    *ppu.Ppu
+	cpu    *cpu.Cpu
 }
 
 func Create() *Emulator {
 	result := &Emulator{}
-	result.memory = &memory.Memory{}
-	result.cpu = cpu.CreateCpu(result.memory)
+	result.memory = memory.Create()
+	result.ppu = ppu.Create()
+	result.cpu = cpu.CreateCpu(result.memory, result.ppu)
 
 	return result
 }

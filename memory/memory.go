@@ -12,16 +12,20 @@ const (
 )
 
 var (
-	InvalidRomErr = fmt.Errorf("invalid rom header")
+	ErrInvalidRom     = fmt.Errorf("invalid rom header")
+	ErrInvalidAddress = fmt.Errorf("invalid address")
 )
 
 type Memory struct {
-	iRam [0x0800]byte
-	cart Cart
+	iRam         [0x0800]byte
+	cart         Cart
+	PpuRegisters *PpuRegisters
 }
 
 func Create() *Memory {
-	return &Memory{}
+	return &Memory{
+		PpuRegisters: &PpuRegisters{},
+	}
 }
 
 func (m *Memory) WriteByteAt(address uint16, value byte) {
@@ -40,10 +44,10 @@ func (m *Memory) WriteByteAt(address uint16, value byte) {
 		m.iRam[address-0x1800] = value
 	//PPU
 	case address >= 0x2000 && address <= 0x2007:
-		panic(fmt.Errorf("PPU regsiters not created"))
+		m.PpuRegisters.WriteByteAt(address, value)
 	//Mirror of PPU repeats every 8 bytes
 	case address >= 0x2008 && address <= 0x3FFF:
-		panic(fmt.Errorf("PPU regsiters not created"))
+		m.PpuRegisters.WriteByteAt(0x2000+address%8, value)
 	//APU and IO
 	case address >= 0x4000 && address <= 0x4017:
 		panic(fmt.Errorf("APU and IO regsiters not created"))
@@ -52,11 +56,11 @@ func (m *Memory) WriteByteAt(address uint16, value byte) {
 		panic(fmt.Errorf("funky APU and IO not created"))
 	//Cart space: PRG, ROM, PRG, RAM and mappers
 	case address >= 0x4020 && address <= 0xFFFF:
-		panic(fmt.Errorf("cart space not created"))
+		m.cart.WriteByteAt(address, value)
 	}
 }
 
-func (m *Memory) WriteShort(address, value uint16) {
+func (m *Memory) WriteUint16At(address, value uint16) {
 	m.WriteByteAt(address, byte(value&0x00FF))
 	m.WriteByteAt(address+1, byte(value>>8))
 }
@@ -77,10 +81,10 @@ func (m *Memory) ReadByteAt(address uint16) byte {
 		return m.iRam[address-0x1800]
 	//PPU
 	case address >= 0x2000 && address <= 0x2007:
-		panic(fmt.Errorf("PPU regsiters not created"))
+		return m.PpuRegisters.ReadByteAt(address)
 	//Mirror of PPU repeats every 8 bytes
 	case address >= 0x2008 && address <= 0x3FFF:
-		panic(fmt.Errorf("PPU regsiters not created"))
+		return m.PpuRegisters.ReadByteAt(0x2000 + address%8)
 	//APU and IO
 	case address >= 0x4000 && address <= 0x4017:
 		panic(fmt.Errorf("APU and IO regsiters not created"))
@@ -95,7 +99,7 @@ func (m *Memory) ReadByteAt(address uint16) byte {
 	panic(fmt.Errorf("invalid address"))
 }
 
-func (m *Memory) ReadUint16(address uint16) uint16 {
+func (m *Memory) ReadUint16At(address uint16) uint16 {
 	return binary.LittleEndian.Uint16(
 		[]byte{m.ReadByteAt(address), m.ReadByteAt(address + 1)})
 }
@@ -125,7 +129,7 @@ func (m *Memory) LoadRom(r io.Reader) error {
 
 	dotNesHeaderPrefix := []byte{0x4E, 0x45, 0x53, 0x1A}
 	if cartPrefix, err := buffer.PopN(4); err != nil || !bytes.Equal(dotNesHeaderPrefix, cartPrefix) {
-		return InvalidRomErr
+		return ErrInvalidRom
 	}
 
 	var err error
@@ -147,7 +151,7 @@ func (m *Memory) LoadRom(r io.Reader) error {
 	for i := 0; i < int(info.PrgRomBanks); i++ {
 		data, err := buffer.PopN(16384)
 		if err != nil {
-			return InvalidRomErr
+			return ErrInvalidRom
 		}
 		m.cart.WriteBytesPrg(data)
 	}
@@ -155,7 +159,7 @@ func (m *Memory) LoadRom(r io.Reader) error {
 	for i := 0; i < int(info.ChrRomBanks); i++ {
 		data, err := buffer.PopN(8192)
 		if err != nil {
-			return InvalidRomErr
+			return ErrInvalidRom
 		}
 		m.cart.WriteBytesPrg(data)
 	}

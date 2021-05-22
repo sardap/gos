@@ -8,11 +8,12 @@ import (
 
 	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/memory"
+	"github.com/sardap/gos/ppu"
 	"github.com/stretchr/testify/assert"
 )
 
 func createCpu() *cpu.Cpu {
-	return cpu.CreateCpu(memory.Create())
+	return cpu.CreateCpu(memory.Create(), ppu.Create())
 }
 
 type writeFunc func(c *cpu.Cpu, mode cpu.AddressMode, val byte)
@@ -64,38 +65,38 @@ func writeByteToAddress(c *cpu.Cpu, mode cpu.AddressMode, val byte) {
 
 			case cpu.AddressModeAbsolute:
 				c.Registers.PC = 0
-				c.Memory.WriteShort(1, 300)
+				c.Memory.WriteUint16At(1, 300)
 				c.Memory.WriteByteAt(300, val)
 
 			case cpu.AddressModeAbsoluteX:
 				c.Registers.PC = 0
 				c.Registers.X = 5
-				c.Memory.WriteShort(1, 300)
+				c.Memory.WriteUint16At(1, 300)
 				c.Memory.WriteByteAt(305, val)
 
 			case cpu.AddressModeAbsoluteY:
 				c.Registers.PC = 0
 				c.Registers.Y = 10
-				c.Memory.WriteShort(1, 300)
+				c.Memory.WriteUint16At(1, 300)
 				c.Memory.WriteByteAt(310, val)
 
 			case cpu.AddressModeIndirect:
 				c.Registers.PC = 0
-				c.Memory.WriteShort(1, 2048)
+				c.Memory.WriteUint16At(1, 2048)
 				c.Memory.WriteByteAt(2048, val)
 
 			case cpu.AddressModeIndirectX:
 				c.Registers.PC = 0
 				c.Registers.X = 10
 				c.Memory.WriteByteAt(1, 20)
-				c.Memory.WriteShort(30, 2048)
+				c.Memory.WriteUint16At(30, 2048)
 				c.Memory.WriteByteAt(2048, val)
 
 			case cpu.AddressModeIndirectY:
 				c.Registers.PC = 0
 				c.Registers.Y = 20
 				c.Memory.WriteByteAt(1, 20)
-				c.Memory.WriteShort(20, 1028)
+				c.Memory.WriteUint16At(20, 1028)
 				c.Memory.WriteByteAt(1048, val)
 			}
 		}
@@ -111,54 +112,54 @@ func writeUint16ToAddress(c *cpu.Cpu, mode cpu.AddressMode, val uint16) {
 			switch mode {
 			case cpu.AddressModeImmediate:
 				c.Registers.PC = 0
-				c.Memory.WriteShort(1, val)
+				c.Memory.WriteUint16At(1, val)
 
 			case cpu.AddressModeZeroPage:
 				c.Registers.PC = 0
 				c.Memory.WriteByteAt(1, 30)
-				c.Memory.WriteShort(30, val)
+				c.Memory.WriteUint16At(30, val)
 
 			case cpu.AddressModeZeroPageX:
 				c.Registers.PC = 0
 				c.Registers.X = 5
 				c.Memory.WriteByteAt(1, 30)
-				c.Memory.WriteShort(35, val)
+				c.Memory.WriteUint16At(35, val)
 
 			case cpu.AddressModeAbsolute:
 				c.Registers.PC = 0
-				c.Memory.WriteShort(1, 300)
-				c.Memory.WriteShort(300, val)
+				c.Memory.WriteUint16At(1, 300)
+				c.Memory.WriteUint16At(300, val)
 
 			case cpu.AddressModeAbsoluteX:
 				c.Registers.PC = 0
 				c.Registers.X = 5
-				c.Memory.WriteShort(1, 300)
-				c.Memory.WriteShort(305, val)
+				c.Memory.WriteUint16At(1, 300)
+				c.Memory.WriteUint16At(305, val)
 
 			case cpu.AddressModeAbsoluteY:
 				c.Registers.PC = 0
 				c.Registers.Y = 10
-				c.Memory.WriteShort(1, 300)
-				c.Memory.WriteShort(310, val)
+				c.Memory.WriteUint16At(1, 300)
+				c.Memory.WriteUint16At(310, val)
 
 			case cpu.AddressModeIndirect:
 				c.Registers.PC = 0
-				c.Memory.WriteShort(c.Registers.PC+1, 1000)
-				c.Memory.WriteShort(1000, val)
+				c.Memory.WriteUint16At(c.Registers.PC+1, 1000)
+				c.Memory.WriteUint16At(1000, val)
 
 			case cpu.AddressModeIndirectX:
 				c.Registers.PC = 0
 				c.Registers.X = 10
 				c.Memory.WriteByteAt(1, 20)
-				c.Memory.WriteShort(30, 2048)
-				c.Memory.WriteShort(2048, val)
+				c.Memory.WriteUint16At(30, 2048)
+				c.Memory.WriteUint16At(2048, val)
 
 			case cpu.AddressModeIndirectY:
 				c.Registers.PC = 0
 				c.Registers.Y = 20
 				c.Memory.WriteByteAt(1, 20)
-				c.Memory.WriteShort(20, 1028)
-				c.Memory.WriteShort(1048, val)
+				c.Memory.WriteUint16At(20, 1028)
+				c.Memory.WriteUint16At(1048, val)
 			}
 		}
 	}
@@ -701,7 +702,7 @@ func TestJmp(t *testing.T) {
 	c := createCpu()
 	c.Registers.PC = 0
 
-	c.Memory.WriteShort(1, 0x1312)
+	c.Memory.WriteUint16At(1, 0x1312)
 
 	cpu.Jmp(c, cpu.AddressModeAbsolute)
 

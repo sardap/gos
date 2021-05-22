@@ -24,7 +24,7 @@ type Memory struct {
 
 func Create() *Memory {
 	return &Memory{
-		PpuRegisters: &PpuRegisters{},
+		PpuRegisters: CreatePpuRegisters(),
 	}
 }
 

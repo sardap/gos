@@ -104,23 +104,23 @@ func init() {
 			Extra cycles
 		*/
 		// Bcc branch on C = 0
-		0x90: {Inst: Bcc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCC oper"},
+		0x90: {Inst: Bcc, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCC oper"},
 		// Branch on Carry Set
-		0xB0: {Inst: Bcs, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCS oper"},
+		0xB0: {Inst: Bcs, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCS oper"},
 		// Branch on Result Zero
-		0xF0: {Inst: Beq, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BEQ oper"},
+		0xF0: {Inst: Beq, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BEQ oper"},
 		// Branch on Result Minus
-		0x30: {Inst: Bmi, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BMI oper"},
+		0x30: {Inst: Bmi, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BMI oper"},
 		// Branch on Result not Zero
-		0xD0: {Inst: Bne, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BNE oper"},
+		0xD0: {Inst: Bne, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BNE oper"},
 		// Branch on Result Plus
-		0x10: {Inst: Bpl, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BPL oper"},
+		0x10: {Inst: Bpl, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BPL oper"},
 		// interrupt; push PC+2; push SR
 		0x00: {Inst: Brk, Length: 1, MinCycles: 7, AddressMode: AddressModeImplied, Name: "BRK"},
 		// Branch on Overflow Clear
-		0x50: {Inst: Bvc, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVC oper"},
+		0x50: {Inst: Bvc, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVC oper"},
 		// Branch on Overflow Set
-		0x70: {Inst: Bvs, Length: 0, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVS oper"},
+		0x70: {Inst: Bvs, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVS oper"},
 		// A AND M, M7 -> N, M6 -> V
 		0x24: {Inst: Bit, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "BIT oper"},
 		0x2C: {Inst: Bit, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "BIT oper"},
@@ -181,7 +181,7 @@ func init() {
 		0x4C: {Inst: Jmp, Length: 0, MinCycles: 3, AddressMode: AddressModeAbsolute, Name: "JMP oper"},
 		0x6C: {Inst: Jmp, Length: 0, MinCycles: 5, AddressMode: AddressModeIndirect, Name: "JMP (oper)"},
 		// push (PC+2); (PC+1) -> PCL; (PC+2) -> PCH
-		0x20: {Inst: Jsr, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "JSR oper"},
+		0x20: {Inst: Jsr, Length: 0, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "JSR oper"},
 		// M -> A
 		0xA9: {Inst: Lda, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "LDA #oper"},
 		0xA5: {Inst: Lda, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LDA oper"},
@@ -306,7 +306,7 @@ func (c *Cpu) Excute() {
 
 	builder.WriteString(fmt.Sprintf("%04X  ", c.Registers.PC))
 	builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByteAt(c.Registers.PC)))
-	if operation.Length >= 2 {
+	if operation.Length >= 2 || operation.AddressMode == AddressModeRelative {
 		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByteAt(c.Registers.PC+1)))
 	}
 	if operation.Length >= 3 {
@@ -318,13 +318,13 @@ func (c *Cpu) Excute() {
 
 	builder.WriteString(strings.Split(operation.Name, " ")[0])
 	builder.WriteString(" ")
-	if operation.Length >= 2 {
+	if operation.Length >= 2 || operation.Length == 0 {
 		if operation.AddressMode == AddressModeImmediate {
 			builder.WriteString("#$")
 		} else {
 			builder.WriteString("$")
 		}
-		if operation.Length >= 3 {
+		if operation.Length >= 3 || operation.Length == 0 {
 			builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByteAt(c.Registers.PC+2)))
 		}
 		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByteAt(c.Registers.PC+1)))
@@ -519,8 +519,6 @@ func branchOnFlag(c *Cpu, flag bool) {
 		} else {
 			c.ExtraCycles += 2
 		}
-	} else {
-		c.Registers.PC += 2
 	}
 }
 
@@ -677,7 +675,7 @@ func Jmp(c *Cpu, mode AddressMode) {
 
 func Jsr(c *Cpu, mode AddressMode) {
 	c.PushUint16(c.Registers.PC + 2)
-	c.Registers.PC = c.readUint16(mode)
+	c.Registers.PC = c.GetOprandAddress(mode)
 }
 
 func Lda(c *Cpu, mode AddressMode) {

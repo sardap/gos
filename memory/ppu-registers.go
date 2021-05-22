@@ -81,6 +81,19 @@ type PpuRegisters struct {
 	addressLatch  byte
 }
 
+func CreatePpuRegisters() *PpuRegisters {
+	return &PpuRegisters{
+		Ctrl:       &PpuCtrl{},
+		Mask:       &PpuRegister{},
+		Status:     &PpuRegister{},
+		OamAddress: &PpuRegister{},
+		OamData:    &PpuRegister{},
+		Scroll:     &PpuRegister{},
+		Address:    &PpuRegister{},
+		Data:       &PpuRegister{},
+	}
+}
+
 func (p *PpuRegisters) GetPendingWrites() []PpuWrite {
 	return p.pendingWrites
 }

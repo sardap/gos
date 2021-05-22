@@ -351,7 +351,7 @@ func TestBranchFlags(t *testing.T) {
 
 		test.inscut(c, cpu.AddressModeRelative)
 
-		assert.Equal(t, uint16(7), c.Registers.PC)
+		assert.Equal(t, uint16(5), c.Registers.PC)
 		assert.Equal(t, uint8(0), c.ExtraCycles)
 	}
 }
@@ -720,8 +720,9 @@ func TestJsr(t *testing.T) {
 	t.Parallel()
 
 	c := createCpu()
+	c.Registers.PC = 0
 
-	writeUint16ToAddress(c, cpu.AddressModeAbsolute, 0x1312)
+	c.Memory.WriteUint16At(1, 0x1312)
 
 	cpu.Jsr(c, cpu.AddressModeAbsolute)
 

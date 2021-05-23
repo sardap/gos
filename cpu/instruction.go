@@ -423,16 +423,6 @@ func (c *Cpu) readByte(mode AddressMode) byte {
 	}
 }
 
-func (c *Cpu) readUint16(mode AddressMode) uint16 {
-	switch mode {
-	case AddressModeAccumulator:
-		panic(fmt.Errorf("you can't read accumulator as uint16"))
-	default:
-		address := c.GetOprandAddress(mode)
-		return c.Memory.ReadUint16At(address)
-	}
-}
-
 func (c *Cpu) writeByte(mode AddressMode, value byte) {
 	switch mode {
 	case AddressModeAccumulator:
@@ -672,7 +662,7 @@ func Iny(c *Cpu, mode AddressMode) {
 
 func Jmp(c *Cpu, mode AddressMode) {
 	c.Registers.PC = c.GetOprandAddress(mode)
-	
+
 }
 
 func Jsr(c *Cpu, mode AddressMode) {

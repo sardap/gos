@@ -553,8 +553,6 @@ func Bit(c *Cpu, mode AddressMode) {
 	c.Registers.P.SetFlag(FlagNegative, nesmath.BitSet(operand, 7))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(c.Registers.A&operand)))
 	c.Registers.P.SetFlag(FlagOverflow, nesmath.BitSet(operand, 6))
-
-	c.writeByte(mode, c.Registers.A&operand)
 }
 
 func clearBit(c *Cpu, flag Flag) {

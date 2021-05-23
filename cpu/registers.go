@@ -7,7 +7,7 @@ const (
 	StartingX  = 0
 	StartingY  = 0
 	StartingPC = 0xC000
-	StartingSP = 0xFF
+	StartingSP = 0xFD
 	StartingP  = 0x24
 )
 

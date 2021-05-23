@@ -10,7 +10,7 @@ func main() {
 	e := emulator.Create()
 
 	func() {
-		f, err := os.Open("assets\\test_roms\\other\\nestest.nes")
+		f, err := os.Open("assets\\nestest\\nestest.nes")
 		if err != nil {
 			panic(err)
 		}

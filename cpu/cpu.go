@@ -9,7 +9,7 @@ type Cpu struct {
 	Registers   *Registers
 	Memory      *memory.Memory
 	Ppu         *ppu.Ppu
-	Ticks       int
+	Cycles       int
 	ExtraCycles byte
 	Interupt    bool
 }
@@ -19,7 +19,7 @@ func CreateCpu(mem *memory.Memory, ppu *ppu.Ppu) *Cpu {
 		Registers: CreateRegisters(),
 		Memory:    mem,
 		Ppu:       ppu,
-		Ticks:     0,
+		Cycles:     0,
 	}
 }
 

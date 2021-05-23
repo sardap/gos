@@ -10,26 +10,27 @@ import (
 )
 
 type Emulator struct {
-	memory *memory.Memory
-	ppu    *ppu.Ppu
-	cpu    *cpu.Cpu
+	Memory *memory.Memory
+	Ppu    *ppu.Ppu
+	Cpu    *cpu.Cpu
 }
 
 func Create() *Emulator {
 	result := &Emulator{}
-	result.memory = memory.Create()
-	result.ppu = ppu.Create()
-	result.cpu = cpu.CreateCpu(result.memory, result.ppu)
+	result.Memory = memory.Create()
+	result.Ppu = ppu.Create()
+	result.Cpu = cpu.CreateCpu(result.Memory, result.Ppu)
 
 	return result
 }
 
 func (e *Emulator) LoadRom(r io.Reader) error {
-	return e.memory.LoadRom(r)
+	return e.Memory.LoadRom(r)
 }
 
 func (e *Emulator) Step() {
-	e.cpu.Excute()
+	e.Cpu.Cycles = 0
+	e.Cpu.Excute()
 
 	time.Sleep(time.Duration(10) * time.Millisecond)
 }

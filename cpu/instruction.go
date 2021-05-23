@@ -349,7 +349,8 @@ func (c *Cpu) Excute() {
 	operation.Inst(c, operation.AddressMode)
 
 	c.Registers.PC += operation.Length
-	c.Ticks += operation.MinCycles
+	c.Cycles += operation.MinCycles + int(c.ExtraCycles)
+	c.ExtraCycles = 0
 
 	ppuWrites := c.Memory.PpuRegisters.GetPendingWrites()
 	c.Ppu.Step(ppuWrites)
@@ -671,6 +672,7 @@ func Iny(c *Cpu, mode AddressMode) {
 
 func Jmp(c *Cpu, mode AddressMode) {
 	c.Registers.PC = c.GetOprandAddress(mode)
+	
 }
 
 func Jsr(c *Cpu, mode AddressMode) {
@@ -776,7 +778,6 @@ func Rti(c *Cpu, mode AddressMode) {
 
 func Rts(c *Cpu, mode AddressMode) {
 	c.Registers.PC = c.PopUint16()
-	c.Registers.PC++
 }
 
 func Sbc(c *Cpu, mode AddressMode) {

@@ -1073,7 +1073,7 @@ func TestRts(t *testing.T) {
 
 	cpu.Rts(c, cpu.AddressModeImplied)
 
-	assert.Equal(t, uint16(0x1312), c.Registers.PC)
+	assert.Equal(t, uint16(0x1311), c.Registers.PC)
 }
 
 func TestSbc(t *testing.T) {

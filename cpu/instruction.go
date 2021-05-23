@@ -239,7 +239,7 @@ func init() {
 		0x6E: {Inst: Ror, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "ROR oper"},
 		0x7E: {Inst: Ror, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "ROR oper,X"},
 		// pull SR; pull PC
-		0x40: {Inst: Rti, Length: 1, MinCycles: 6, AddressMode: AddressModeImplied, Name: "RTI"},
+		0x40: {Inst: Rti, Length: 0, MinCycles: 6, AddressMode: AddressModeImplied, Name: "RTI"},
 		// pull PC, PC+1 -> PC
 		0x60: {Inst: Rts, Length: 0, MinCycles: 6, AddressMode: AddressModeImplied, Name: "RTS"},
 		// A - M - C -> A

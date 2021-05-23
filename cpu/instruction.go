@@ -351,9 +351,9 @@ func And(c *Cpu, mode AddressMode) {
 }
 
 func Asl(c *Cpu, mode AddressMode) {
-	oprand := c.readByte(mode)
+	operand := c.readByte(mode)
 
-	result := uint16(oprand << 1)
+	result := uint16(operand) << 1
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(result))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))

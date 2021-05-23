@@ -293,9 +293,19 @@ func TestAsl(t *testing.T) {
 
 		cpu.Asl(c, test.mode)
 
-		assert.Equalf(t, uint8(0b00000010), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, uint8(0b00000010), readByteFromAddress(c, test.mode), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagCarry), "Address Mode %s", test.mode.String())
+
+		writeByteToAddress(c, test.mode, 0x80)
+
+		cpu.Asl(c, test.mode)
+
+		assert.Equalf(t, uint8(0x00), readByteFromAddress(c, test.mode), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagCarry), "Address Mode %s", test.mode.String())
 	}
 }
 

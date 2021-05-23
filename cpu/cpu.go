@@ -1,6 +1,7 @@
 package cpu
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"strings"
@@ -58,14 +59,12 @@ func (c *Cpu) PopP() {
 }
 
 func (c *Cpu) PushUint16(value uint16) {
-	c.Memory.WriteUint16At(memory.StackOffset+uint16(c.Registers.SP), value)
-	c.Registers.SP -= 2
+	c.PushByte(byte(value >> 8))
+	c.PushByte(byte(value & 0xff))
 }
 
 func (c *Cpu) PopUint16() uint16 {
-	c.Registers.SP += 2
-	result := c.Memory.ReadUint16At(memory.StackOffset + uint16(c.Registers.SP))
-	return result
+	return binary.LittleEndian.Uint16([]byte{c.PopByte(), c.PopByte()})
 }
 
 func (c *Cpu) logStep(operation Operation) {

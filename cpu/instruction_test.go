@@ -1260,7 +1260,7 @@ func TestTransfers(t *testing.T) {
 	}{
 		{inst: cpu.Tax, source: &c.Registers.A, target: &c.Registers.X, checkFlags: true},
 		{inst: cpu.Tay, source: &c.Registers.A, target: &c.Registers.Y, checkFlags: true},
-		{inst: cpu.Tsx, source: &c.Registers.SP, target: &c.Registers.X, checkFlags: false},
+		{inst: cpu.Tsx, source: &c.Registers.SP, target: &c.Registers.X, checkFlags: true},
 		{inst: cpu.Txa, source: &c.Registers.X, target: &c.Registers.A, checkFlags: true},
 		{inst: cpu.Txs, source: &c.Registers.X, target: &c.Registers.SP, checkFlags: false},
 		{inst: cpu.Tya, source: &c.Registers.Y, target: &c.Registers.A, checkFlags: true},

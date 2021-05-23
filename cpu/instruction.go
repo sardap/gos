@@ -841,6 +841,9 @@ func Tay(c *Cpu, mode AddressMode) {
 
 func Tsx(c *Cpu, mode AddressMode) {
 	c.Registers.X = c.Registers.SP
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(c.Registers.X)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(c.Registers.X)))
 }
 
 func Txa(c *Cpu, mode AddressMode) {

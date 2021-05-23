@@ -1027,6 +1027,18 @@ func TestRor(t *testing.T) {
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagCarry), "Address Mode %s", test.mode.String())
+
+		// 1
+		c.Registers.P.Write(0)
+		writeByteToAddress(c, test.mode, 0x01)
+
+		cpu.Ror(c, test.mode)
+
+		assert.Equalf(t, uint8(0x00), readByteFromAddress(c, test.mode), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagCarry), "Address Mode %s", test.mode.String())
+
 	}
 }
 

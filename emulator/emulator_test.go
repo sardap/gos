@@ -210,7 +210,7 @@ func TestNesTestRom(t *testing.T) {
 
 	var scanner *bufio.Scanner
 	func() {
-		testRomMutex.Lock()
+		testRomMutex.Lock() 
 		defer testRomMutex.Unlock()
 		// Test loading rom
 		romBytes, _ := os.ReadFile(nesTestRomPath)
@@ -223,7 +223,7 @@ func TestNesTestRom(t *testing.T) {
 
 	cycles := int64(4)
 	lineNum := 1
-	for scanner.Scan() && lineNum < 1019 && !t.Failed() {
+	for scanner.Scan() && lineNum < 1021 && !t.Failed() {
 		line := scanner.Text()
 		nesTestLine := parseNesTestLine(string(line))
 		nesTestEmulator := emulatorToTestLine(e, cycles)

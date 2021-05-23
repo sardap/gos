@@ -560,12 +560,12 @@ func Ldy(c *Cpu, mode AddressMode) {
 func Lsr(c *Cpu, mode AddressMode) {
 	oprand := c.readByte(mode)
 
-	result := uint16(oprand >> 1)
+	result := uint16(oprand) >> 1
 
 	c.Registers.P.SetFlag(FlagNegative, false)
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
 	// this isn't a mistake
-	c.Registers.P.SetFlag(FlagCarry, result == 0)
+	c.Registers.P.SetFlag(FlagCarry, zeroHappend(result))
 
 	c.writeByte(mode, byte(result))
 }
@@ -624,7 +624,7 @@ func Ror(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(result))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
-	c.Registers.P.SetFlag(FlagCarry, result&0b00000001 > 0)
+	c.Registers.P.SetFlag(FlagCarry, nesmath.BitSet(operand, 0))
 
 	c.writeByte(mode, byte(result))
 }

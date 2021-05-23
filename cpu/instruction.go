@@ -351,10 +351,6 @@ func (c *Cpu) Excute() {
 	c.Registers.PC += operation.Length
 	c.Cycles += operation.MinCycles + int(c.ExtraCycles)
 	c.ExtraCycles = 0
-
-	ppuWrites := c.Memory.PpuRegisters.GetPendingWrites()
-	c.Ppu.Step(ppuWrites)
-	c.Memory.PpuRegisters.ClearPendingWrites()
 }
 
 func samePage(a, b uint16) bool {
@@ -726,11 +722,16 @@ func Pha(c *Cpu, mode AddressMode) {
 }
 
 func Php(c *Cpu, mode AddressMode) {
-	c.PushByte(c.Registers.P.Read())
+	c.PushByte(c.Registers.P.Read() | pMissingBits)
 }
 
 func Pla(c *Cpu, mode AddressMode) {
-	c.Registers.A = c.PopByte()
+	a := c.PopByte()
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(a)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(a)))
+
+	c.Registers.A = a
 }
 
 func Plp(c *Cpu, mode AddressMode) {

@@ -260,6 +260,16 @@ func TestAnd(t *testing.T) {
 		assert.Equalf(t, uint8(0b00000101), c.Registers.A, "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+
+		writeByteToAddress(c, test.mode, 0xEF)
+		c.Registers.P.Write(0)
+		c.Registers.A = 0x6F
+
+		cpu.And(c, test.mode)
+
+		assert.Equalf(t, uint8(0x6F), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
 	}
 }
 
@@ -917,22 +927,25 @@ func TestPushies(t *testing.T) {
 
 	c := createCpu()
 
+	// Pha
 	c.Registers.A = 0x13
 
 	cpu.Pha(c, cpu.AddressModeImplied)
 
 	assert.Equal(t, byte(0x13), c.PopByte())
 
-	c.Registers.P.Write(0x15)
+	// Php
+	c.Registers.P.Write(0x6f)
 
 	cpu.Php(c, cpu.AddressModeImplied)
 
-	assert.Equal(t, byte(0x15), c.PopByte())
+	assert.Equal(t, byte(0x7f), c.PopByte())
 }
 
 func TestPulls(t *testing.T) {
 	t.Parallel()
 
+	// Pla
 	c := createCpu()
 
 	c.PushByte(0x13)
@@ -941,6 +954,7 @@ func TestPulls(t *testing.T) {
 
 	assert.Equal(t, byte(0x13), c.Registers.A)
 
+	// Plp
 	c.PushByte(0x15)
 
 	cpu.Plp(c, cpu.AddressModeImplied)

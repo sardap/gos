@@ -32,5 +32,9 @@ func (e *Emulator) Step() {
 	e.Cpu.Cycles = 0
 	e.Cpu.Excute()
 
+	ppuWrites := e.Memory.PpuRegisters.GetPendingWrites()
+	e.Ppu.Step(ppuWrites)
+	e.Memory.PpuRegisters.ClearPendingWrites()
+
 	time.Sleep(time.Duration(10) * time.Millisecond)
 }

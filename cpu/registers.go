@@ -3,12 +3,13 @@ package cpu
 import nesmath "github.com/sardap/gos/math"
 
 const (
-	StartingA  = 0
-	StartingX  = 0
-	StartingY  = 0
-	StartingPC = 0xC000
-	StartingSP = 0xFD
-	StartingP  = 0x24
+	StartingA    = 0
+	StartingX    = 0
+	StartingY    = 0
+	StartingPC   = 0xC000
+	StartingSP   = 0xFD
+	StartingP    = 0x24
+	pMissingBits = 0b00110000
 )
 
 type ByteRegister struct {

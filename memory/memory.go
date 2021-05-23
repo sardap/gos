@@ -28,6 +28,10 @@ func Create() *Memory {
 	}
 }
 
+func (m *Memory) SetCart(cart Cart) {
+	m.cart = cart
+}
+
 func (m *Memory) WriteByteAt(address uint16, value byte) {
 	switch {
 	//Intenal Ram

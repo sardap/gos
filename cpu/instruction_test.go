@@ -1074,7 +1074,7 @@ func TestRti(t *testing.T) {
 
 	cpu.Rti(c, cpu.AddressModeImplied)
 
-	assert.Equal(t, byte(0xFF), c.Registers.P.Read())
+	assert.Equal(t, byte(0xEF), c.Registers.P.Read())
 	assert.Equal(t, uint16(0x1312), c.Registers.PC)
 }
 

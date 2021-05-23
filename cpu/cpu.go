@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	nesmath "github.com/sardap/gos/math"
 	"github.com/sardap/gos/memory"
 	"github.com/sardap/gos/ppu"
 )
@@ -34,10 +35,26 @@ func (c *Cpu) PushByte(value byte) {
 	c.Registers.SP--
 }
 
+func (c *Cpu) PushP() {
+	value := c.Registers.P.Read()
+	value = nesmath.SetBit(value, byte(FlagBreakCommand), c.Interupt)
+	value = nesmath.SetBit(value, byte(FlagUnsued), true)
+
+	c.PushByte(value)
+}
+
 func (c *Cpu) PopByte() byte {
 	c.Registers.SP++
 	result := c.Memory.ReadByteAt(memory.StackOffset + uint16(c.Registers.SP))
 	return result
+}
+
+func (c *Cpu) PopP() {
+	value := c.PopByte()
+	value = nesmath.SetBit(value, byte(FlagUnsued), true)
+	value = nesmath.SetBit(value, byte(FlagBreakCommand), false)
+
+	c.Registers.P.Write(value)
 }
 
 func (c *Cpu) PushUint16(value uint16) {
@@ -51,14 +68,7 @@ func (c *Cpu) PopUint16() uint16 {
 	return result
 }
 
-func (c *Cpu) Excute() {
-	opcode := c.Memory.ReadByteAt(c.Registers.PC)
-
-	operation, ok := opcodes[opcode]
-	if !ok {
-		panic(fmt.Errorf("unkown opcode %02X", opcode))
-	}
-
+func (c *Cpu) logStep(operation Operation) {
 	var builder strings.Builder
 
 	builder.WriteString(fmt.Sprintf("%04X  ", c.Registers.PC))
@@ -102,6 +112,17 @@ func (c *Cpu) Excute() {
 	builder.WriteString("\n")
 
 	log.Print(builder.String())
+}
+
+func (c *Cpu) Excute() {
+	opcode := c.Memory.ReadByteAt(c.Registers.PC)
+
+	operation, ok := opcodes[opcode]
+	if !ok {
+		panic(fmt.Errorf("unkown opcode %02X", opcode))
+	}
+
+	c.logStep(*operation)
 
 	operation.Inst(c, operation.AddressMode)
 

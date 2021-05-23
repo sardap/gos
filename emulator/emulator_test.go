@@ -248,3 +248,64 @@ func TestNesTestRom(t *testing.T) {
 		lineNum++
 	}
 }
+
+type testCart struct {
+	data [0x10000]byte
+}
+
+func (c *testCart) WriteBytesPrg(value []byte) error {
+	return nil
+}
+
+func (c *testCart) WriteBytesChr(value []byte) error {
+	return nil
+}
+
+func (c *testCart) WriteByteAt(address uint16, value byte) {
+	c.data[address] = value
+}
+
+func (c *testCart) ReadByteAt(address uint16) byte {
+	return c.data[address]
+}
+
+func TestRtsTrick(t *testing.T) {
+	t.Parallel()
+
+	e := emulator.Create()
+	e.Memory.SetCart(&testCart{})
+	e.Cpu.Registers.PC = 0xC0E0
+
+	// 0xC0E0 JSR $8000
+	e.Memory.WriteByteAt(0xC0E0, 0x20)
+	e.Memory.WriteByteAt(0xC0E1, 0x00)
+	e.Memory.WriteByteAt(0xC0E2, 0x80)
+	// 0xC0E3 LDX #$00
+	e.Memory.WriteByteAt(0xC0E3, 0xA2)
+	e.Memory.WriteByteAt(0xC0E4, 0x00)
+	// 0x8000 LDA #$0F
+	e.Memory.WriteByteAt(0x8000, 0xA9)
+	e.Memory.WriteByteAt(0x8001, 0x0F)
+	// 0x8002 STA #$1015
+	e.Memory.WriteByteAt(0x8002, 0x8D)
+	e.Memory.WriteByteAt(0x8003, 0x15)
+	e.Memory.WriteByteAt(0x8004, 0x10)
+	// 0x8005 RTS
+	e.Memory.WriteByteAt(0x8005, 0x60)
+
+	// Jsr
+	e.Step()
+	assert.Equal(t, uint16(0x8000), e.Cpu.Registers.PC)
+
+	// LDA
+	e.Step()
+	assert.Equal(t, byte(0x0F), e.Cpu.Registers.A)
+
+	// STA
+	e.Step()
+	assert.Equal(t, byte(0x0F), e.Memory.ReadByteAt(0x1015))
+
+	// RTS
+	e.Step()
+	assert.Equal(t, uint16(0xC0E3), e.Cpu.Registers.PC)
+}

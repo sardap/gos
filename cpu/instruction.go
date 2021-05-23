@@ -241,7 +241,7 @@ func init() {
 		// pull SR; pull PC
 		0x40: {Inst: Rti, Length: 1, MinCycles: 6, AddressMode: AddressModeImplied, Name: "RTI"},
 		// pull PC, PC+1 -> PC
-		0x60: {Inst: Rts, Length: 1, MinCycles: 6, AddressMode: AddressModeImplied, Name: "RTS"},
+		0x60: {Inst: Rts, Length: 0, MinCycles: 6, AddressMode: AddressModeImplied, Name: "RTS"},
 		// A - M - C -> A
 		0xE9: {Inst: Sbc, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "SBC #oper"},
 		0xE5: {Inst: Sbc, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "SBC oper"},
@@ -403,7 +403,7 @@ func Bpl(c *Cpu, mode AddressMode) {
 
 func Brk(c *Cpu, mode AddressMode) {
 	c.PushUint16(c.Registers.PC + 2)
-	c.PushByte(c.Registers.P.Read())
+	c.PushP()
 	c.Interupt = true
 }
 
@@ -527,6 +527,7 @@ func Jmp(c *Cpu, mode AddressMode) {
 
 }
 
+// Jsr trick https://wiki.nesdev.com/w/index.php/RTS_Trick
 func Jsr(c *Cpu, mode AddressMode) {
 	c.PushUint16(c.Registers.PC + 2)
 	c.Registers.PC = c.GetOprandAddress(mode)
@@ -588,11 +589,7 @@ func Pha(c *Cpu, mode AddressMode) {
 }
 
 func Php(c *Cpu, mode AddressMode) {
-	value := c.Registers.P.Read()
-	value = nesmath.SetBit(value, byte(FlagBreakCommand), c.Interupt)
-	value = nesmath.SetBit(value, byte(FlagUnsued), true)
-
-	c.PushByte(value)
+	c.PushP()
 }
 
 func Pla(c *Cpu, mode AddressMode) {
@@ -605,11 +602,7 @@ func Pla(c *Cpu, mode AddressMode) {
 }
 
 func Plp(c *Cpu, mode AddressMode) {
-	value := c.PopByte()
-	value = nesmath.SetBit(value, byte(FlagUnsued), true)
-	value = nesmath.SetBit(value, byte(FlagBreakCommand), false)
-
-	c.Registers.P.Write(value)
+	c.PopP()
 }
 
 func Rol(c *Cpu, mode AddressMode) {
@@ -637,17 +630,17 @@ func Ror(c *Cpu, mode AddressMode) {
 }
 
 func Rti(c *Cpu, mode AddressMode) {
-	c.Registers.P.Write(c.PopByte())
+	c.PopP()
 	c.Registers.PC = c.PopUint16()
 }
 
 func Rts(c *Cpu, mode AddressMode) {
-	c.Registers.PC = c.PopUint16()
+	c.Registers.PC = c.PopUint16() + 1
 }
 
 func Sbc(c *Cpu, mode AddressMode) {
 	// Fucking stole this what the fuck is this shit
-	// Adding to minus too much coke me thinks
+	// Adding to minus too much big brains me think
 	oprand := c.readByte(mode) ^ 0xFF
 
 	a := c.Registers.A

@@ -9,9 +9,10 @@ type Cpu struct {
 	Registers   *Registers
 	Memory      *memory.Memory
 	Ppu         *ppu.Ppu
-	Cycles       int
+	Cycles      int
 	ExtraCycles byte
-	Interupt    bool
+	// http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
+	Interupt bool
 }
 
 func CreateCpu(mem *memory.Memory, ppu *ppu.Ppu) *Cpu {
@@ -19,7 +20,7 @@ func CreateCpu(mem *memory.Memory, ppu *ppu.Ppu) *Cpu {
 		Registers: CreateRegisters(),
 		Memory:    mem,
 		Ppu:       ppu,
-		Cycles:     0,
+		Cycles:    0,
 	}
 }
 

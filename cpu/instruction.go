@@ -722,7 +722,16 @@ func Pha(c *Cpu, mode AddressMode) {
 }
 
 func Php(c *Cpu, mode AddressMode) {
-	c.PushByte(c.Registers.P.Read() | pMissingBits)
+	value := c.Registers.P.Read()
+	// Unused
+	value = nesmath.SetBit(value, 5, true)
+	if c.Interupt {
+		value = nesmath.SetBit(value, 4, false)
+	} else {
+		value = nesmath.SetBit(value, 4, true)
+	}
+
+	c.PushByte(value)
 }
 
 func Pla(c *Cpu, mode AddressMode) {
@@ -735,7 +744,13 @@ func Pla(c *Cpu, mode AddressMode) {
 }
 
 func Plp(c *Cpu, mode AddressMode) {
-	c.Registers.P.Write(c.PopByte())
+	value := c.PopByte()
+	// Unused
+	value = nesmath.SetBit(value, 5, true)
+	// Break
+	value = nesmath.SetBit(value, 4, false)
+
+	c.Registers.P.Write(value)
 }
 
 func Rol(c *Cpu, mode AddressMode) {

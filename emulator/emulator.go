@@ -2,7 +2,6 @@ package emulator
 
 import (
 	"io"
-	"time"
 
 	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/memory"
@@ -35,6 +34,4 @@ func (e *Emulator) Step() {
 	ppuWrites := e.Memory.PpuRegisters.GetPendingWrites()
 	e.Ppu.Step(ppuWrites)
 	e.Memory.PpuRegisters.ClearPendingWrites()
-
-	time.Sleep(time.Duration(10) * time.Millisecond)
 }

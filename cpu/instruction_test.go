@@ -955,11 +955,11 @@ func TestPulls(t *testing.T) {
 	assert.Equal(t, byte(0x13), c.Registers.A)
 
 	// Plp
-	c.PushByte(0x15)
+	c.PushByte(0xcf)
 
 	cpu.Plp(c, cpu.AddressModeImplied)
 
-	assert.Equal(t, byte(0x15), c.Registers.P.Read())
+	assert.Equal(t, byte(0xef), c.Registers.P.Read())
 }
 
 func TestRor(t *testing.T) {

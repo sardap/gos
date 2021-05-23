@@ -2,9 +2,7 @@ package cpu
 
 import (
 	"fmt"
-	"log"
 	"math"
-	"strings"
 
 	nesmath "github.com/sardap/gos/math"
 )
@@ -294,138 +292,8 @@ func GetOpcodes() map[byte]*Operation {
 	return opcodes
 }
 
-func (c *Cpu) Excute() {
-	opcode := c.Memory.ReadByteAt(c.Registers.PC)
-
-	operation, ok := opcodes[opcode]
-	if !ok {
-		panic(fmt.Errorf("unkown opcode %02X", opcode))
-	}
-
-	var builder strings.Builder
-
-	builder.WriteString(fmt.Sprintf("%04X  ", c.Registers.PC))
-	builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByteAt(c.Registers.PC)))
-	if operation.Length >= 2 || operation.AddressMode == AddressModeRelative {
-		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByteAt(c.Registers.PC+1)))
-	}
-	if operation.Length >= 3 {
-		builder.WriteString(fmt.Sprintf("%02X ", c.Memory.ReadByteAt(c.Registers.PC+2)))
-	}
-	for builder.Len() < 16 {
-		builder.WriteString(" ")
-	}
-
-	builder.WriteString(strings.Split(operation.Name, " ")[0])
-	builder.WriteString(" ")
-	if operation.Length >= 2 || operation.Length == 0 {
-		if operation.AddressMode == AddressModeImmediate {
-			builder.WriteString("#$")
-		} else {
-			builder.WriteString("$")
-		}
-		if operation.Length >= 3 || operation.Length == 0 {
-			builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByteAt(c.Registers.PC+2)))
-		}
-		builder.WriteString(fmt.Sprintf("%02X", c.Memory.ReadByteAt(c.Registers.PC+1)))
-	}
-
-	for builder.Len() < 48 {
-		builder.WriteString(" ")
-	}
-
-	builder.WriteString(
-		fmt.Sprintf(
-			"A:%02X X:%02X Y:%02X P:%02X SP:%02X ",
-			c.Registers.A, c.Registers.X, c.Registers.Y,
-			c.Registers.P.Read(), c.Registers.SP,
-		),
-	)
-
-	builder.WriteString("\n")
-
-	log.Print(builder.String())
-
-	operation.Inst(c, operation.AddressMode)
-
-	c.Registers.PC += operation.Length
-	c.Cycles += operation.MinCycles + int(c.ExtraCycles)
-	c.ExtraCycles = 0
-}
-
 func samePage(a, b uint16) bool {
 	return 256/math.Max(1, float64(a)) != 256/math.Max(1, float64(b))
-}
-
-func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
-	byteOperand := c.Memory.ReadByteAt(c.Registers.PC + 1)
-
-	switch addressMode {
-	case AddressModeImmediate:
-		return c.Registers.PC + 1
-
-	case AddressModeZeroPage:
-		return uint16(byteOperand)
-
-	case AddressModeZeroPageX:
-		return uint16(c.Memory.ReadByteAt(c.Registers.PC+1)) + uint16(c.Registers.X)&0x00FF
-
-	case AddressModeZeroPageY:
-		return uint16(c.Memory.ReadByteAt(c.Registers.PC+1)) + uint16(c.Registers.Y)&0x00FF
-
-	case AddressModeAbsolute:
-		return c.Memory.ReadUint16At(c.Registers.PC + 1)
-
-	case AddressModeAbsoluteX:
-		address := c.Memory.ReadUint16At(c.Registers.PC+1) + uint16(c.Registers.X)
-		if samePage(address, c.Registers.PC) {
-			c.ExtraCycles++
-		}
-		return address
-
-	case AddressModeAbsoluteY:
-		address := c.Memory.ReadUint16At(c.Registers.PC+1) + uint16(c.Registers.Y)
-		if samePage(address, c.Registers.PC) {
-			c.ExtraCycles++
-		}
-		return address
-
-	case AddressModeIndirect:
-		operand := c.Memory.ReadUint16At(c.Registers.PC + 1)
-		return c.Memory.ReadUint16At(operand)
-
-	case AddressModeIndirectX:
-		return c.Memory.ReadUint16At(uint16(byteOperand + c.Registers.X))
-
-	case AddressModeIndirectY:
-		address := uint16(c.Memory.ReadUint16At(uint16(byteOperand))) + uint16(c.Registers.Y)
-		if samePage(address, c.Registers.PC) {
-			c.ExtraCycles++
-		}
-		return address
-
-	default:
-		panic(fmt.Errorf("address mode not implmented"))
-	}
-}
-
-func (c *Cpu) readByte(mode AddressMode) byte {
-	switch mode {
-	case AddressModeAccumulator:
-		return c.Registers.A
-	default:
-		address := c.GetOprandAddress(mode)
-		return c.Memory.ReadByteAt(address)
-	}
-}
-
-func (c *Cpu) writeByte(mode AddressMode, value byte) {
-	switch mode {
-	case AddressModeAccumulator:
-		c.Registers.A = value
-	default:
-		c.Memory.WriteByteAt(c.GetOprandAddress(mode), value)
-	}
 }
 
 func overflowHappend(left, right, result byte) bool {
@@ -721,13 +589,8 @@ func Pha(c *Cpu, mode AddressMode) {
 
 func Php(c *Cpu, mode AddressMode) {
 	value := c.Registers.P.Read()
-	// Unused
-	value = nesmath.SetBit(value, 5, true)
-	if c.Interupt {
-		value = nesmath.SetBit(value, 4, false)
-	} else {
-		value = nesmath.SetBit(value, 4, true)
-	}
+	value = nesmath.SetBit(value, byte(FlagBreakCommand), c.Interupt)
+	value = nesmath.SetBit(value, byte(FlagUnsued), true)
 
 	c.PushByte(value)
 }
@@ -743,10 +606,8 @@ func Pla(c *Cpu, mode AddressMode) {
 
 func Plp(c *Cpu, mode AddressMode) {
 	value := c.PopByte()
-	// Unused
-	value = nesmath.SetBit(value, 5, true)
-	// Break
-	value = nesmath.SetBit(value, 4, false)
+	value = nesmath.SetBit(value, byte(FlagUnsued), true)
+	value = nesmath.SetBit(value, byte(FlagBreakCommand), false)
 
 	c.Registers.P.Write(value)
 }

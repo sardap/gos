@@ -42,4 +42,15 @@ func TestInderectWrap(t *testing.T) {
 	c.Memory.WriteByteAt(0x0400, 0x5D)
 
 	assert.Equal(t, byte(0x5D), c.ReadByteByMode(cpu.AddressModeIndirectX))
+
+	// X
+	c.Registers.X = 0x81
+	c.Registers.A = 0
+	c.Registers.PC = 0
+	c.Memory.WriteByteAt(0x01, 0xFF)
+	c.Memory.WriteByteAt(0x80, 0x00)
+	c.Memory.WriteByteAt(0x81, 0x02)
+	c.Memory.WriteByteAt(0x0200, 0x5A)
+
+	assert.Equal(t, byte(0x5A), c.ReadByteByMode(cpu.AddressModeIndirectX))
 }

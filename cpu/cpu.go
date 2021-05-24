@@ -172,12 +172,11 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return indrectAddress
 
 	case AddressModeIndirectX:
-		address := (uint16(byteOperand) + uint16(c.Registers.X))
-		indrectAddress := binary.LittleEndian.Uint16([]byte{
-			c.Memory.ReadByteAt(address) & 0xFF,
-			c.Memory.ReadByteAt((address + 1) & 0xFF),
+		address := uint16(byteOperand) + uint16(c.Registers.X)
+		return binary.LittleEndian.Uint16([]byte{
+			c.Memory.ReadByteAt(nesmath.WrapUint16(address, 0xFF)),
+			c.Memory.ReadByteAt(nesmath.WrapUint16(address+1, 0xFF)),
 		})
-		return indrectAddress
 
 	case AddressModeIndirectY:
 		address := uint16(c.Memory.ReadUint16At(uint16(byteOperand))) + uint16(c.Registers.Y)

@@ -20,7 +20,7 @@ func TestPushPopUint16(t *testing.T) {
 	assert.Equal(t, byte(0x13), c.PopByte())
 }
 
-func TestInderectWrap(t *testing.T) {
+func TestInderect(t *testing.T) {
 	c := createCpu()
 
 	// Inderect
@@ -31,6 +31,25 @@ func TestInderectWrap(t *testing.T) {
 	c.Memory.WriteByteAt(0x5D, 0x04)
 
 	assert.Equal(t, byte(0x04), c.ReadByteByMode(cpu.AddressModeIndirect))
+}
+
+func TestInderectY(t *testing.T) {
+	c := createCpu()
+
+	// Inderect
+	c.Registers.Y = 0xFF
+	c.Registers.PC = 0
+	c.Memory.WriteByteAt(0x01, 0xFF)
+	c.Memory.WriteByteAt(0xFF, 0x46)
+	c.Memory.WriteByteAt(0x00, 0x01)
+	c.Memory.WriteUint16At(0x0146, 0x0245)
+	c.Memory.WriteByteAt(0x0245, 0x12)
+
+	assert.Equal(t, byte(0x12), c.ReadByteByMode(cpu.AddressModeIndirectY))
+}
+
+func TestInderectXWrap(t *testing.T) {
+	c := createCpu()
 
 	// X
 	c.Registers.X = 0x0A

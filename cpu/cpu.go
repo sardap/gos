@@ -179,7 +179,11 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		})
 
 	case AddressModeIndirectY:
-		address := uint16(c.Memory.ReadUint16At(uint16(byteOperand))) + uint16(c.Registers.Y)
+		indirect := binary.LittleEndian.Uint16([]byte{
+			c.Memory.ReadByteAt(nesmath.WrapUint16(uint16(byteOperand), 0xFF)),
+			c.Memory.ReadByteAt(nesmath.WrapUint16(uint16(byteOperand)+1, 0xFF)),
+		})
+		address := indirect + uint16(c.Registers.Y)
 		if samePage(address, c.Registers.PC) {
 			c.ExtraCycles++
 		}

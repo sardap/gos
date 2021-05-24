@@ -12,8 +12,30 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type testCart struct {
+	data [0x10000]byte
+}
+
+func (c *testCart) WriteBytesPrg(value []byte) error {
+	return nil
+}
+
+func (c *testCart) WriteBytesChr(value []byte) error {
+	return nil
+}
+
+func (c *testCart) WriteByteAt(address uint16, value byte) {
+	c.data[address] = value
+}
+
+func (c *testCart) ReadByteAt(address uint16) byte {
+	return c.data[address]
+}
+
 func createCpu() *cpu.Cpu {
-	return cpu.CreateCpu(memory.Create(), ppu.Create())
+	result := cpu.CreateCpu(memory.Create(), ppu.Create())
+	result.Memory.SetCart(&testCart{})
+	return result
 }
 
 type writeFunc func(c *cpu.Cpu, mode cpu.AddressMode, val byte)
@@ -83,7 +105,8 @@ func writeByteToAddress(c *cpu.Cpu, mode cpu.AddressMode, val byte) {
 			case cpu.AddressModeIndirect:
 				c.Registers.PC = 0
 				c.Memory.WriteUint16At(1, 2048)
-				c.Memory.WriteByteAt(2048, val)
+				c.Memory.WriteUint16At(2048, 2050)
+				c.Memory.WriteByteAt(2050, val)
 
 			case cpu.AddressModeIndirectX:
 				c.Registers.PC = 0
@@ -750,7 +773,7 @@ func TestJsr(t *testing.T) {
 	assert.Equal(t, uint16(0x0002), c.PopUint16())
 }
 
-func TestLda(t *testing.T) {
+func TestLd(t *testing.T) {
 	t.Parallel()
 
 	c := createCpu()

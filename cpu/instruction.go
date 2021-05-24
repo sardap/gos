@@ -324,7 +324,7 @@ func zeroHappend(result uint16) bool {
 }
 
 func Adc(c *Cpu, mode AddressMode) {
-	oprand := c.readByte(mode)
+	oprand := c.ReadByteByMode(mode)
 
 	a := c.Registers.A
 	carry := uint16(c.Registers.P.ReadFlagByte(FlagCarry))
@@ -339,7 +339,7 @@ func Adc(c *Cpu, mode AddressMode) {
 }
 
 func And(c *Cpu, mode AddressMode) {
-	oprand := c.readByte(mode)
+	oprand := c.ReadByteByMode(mode)
 
 	a := c.Registers.A
 	result := uint16(a & oprand)
@@ -351,7 +351,7 @@ func And(c *Cpu, mode AddressMode) {
 }
 
 func Asl(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 
 	result := uint16(operand) << 1
 
@@ -359,7 +359,7 @@ func Asl(c *Cpu, mode AddressMode) {
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
 	c.Registers.P.SetFlag(FlagCarry, postiveCarryHappend(result))
 
-	c.writeByte(mode, byte(result))
+	c.WriteByteByMode(mode, byte(result))
 }
 
 func branchOnFlag(c *Cpu, flag bool) {
@@ -416,7 +416,7 @@ func Bvs(c *Cpu, mode AddressMode) {
 }
 
 func Bit(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 
 	c.Registers.P.SetFlag(FlagNegative, nesmath.BitSet(operand, 7))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(c.Registers.A&operand)))
@@ -444,7 +444,7 @@ func Clv(c *Cpu, mode AddressMode) {
 }
 
 func compare(c *Cpu, mode AddressMode, reg uint8) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 
 	result := uint16(reg) - uint16(operand)
 
@@ -475,9 +475,9 @@ func decerment(c *Cpu, value uint8) uint8 {
 }
 
 func Dec(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 	result := decerment(c, operand)
-	c.writeByte(mode, result)
+	c.WriteByteByMode(mode, result)
 }
 
 func Dex(c *Cpu, mode AddressMode) {
@@ -489,7 +489,7 @@ func Dey(c *Cpu, mode AddressMode) {
 }
 
 func Eor(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 
 	result := c.Registers.A ^ operand
 
@@ -509,9 +509,9 @@ func incerment(c *Cpu, value uint8) uint8 {
 }
 
 func Inc(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 	result := incerment(c, operand)
-	c.writeByte(mode, result)
+	c.WriteByteByMode(mode, result)
 }
 
 func Inx(c *Cpu, mode AddressMode) {
@@ -534,7 +534,7 @@ func Jsr(c *Cpu, mode AddressMode) {
 }
 
 func Lda(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 	c.Registers.A = operand
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
@@ -542,7 +542,7 @@ func Lda(c *Cpu, mode AddressMode) {
 }
 
 func Ldx(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 	c.Registers.X = operand
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
@@ -550,7 +550,7 @@ func Ldx(c *Cpu, mode AddressMode) {
 }
 
 func Ldy(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 	c.Registers.Y = operand
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
@@ -558,7 +558,7 @@ func Ldy(c *Cpu, mode AddressMode) {
 }
 
 func Lsr(c *Cpu, mode AddressMode) {
-	oprand := c.readByte(mode)
+	oprand := c.ReadByteByMode(mode)
 
 	result := uint16(oprand) >> 1
 
@@ -567,14 +567,14 @@ func Lsr(c *Cpu, mode AddressMode) {
 	// this isn't a mistake
 	c.Registers.P.SetFlag(FlagCarry, zeroHappend(result))
 
-	c.writeByte(mode, byte(result))
+	c.WriteByteByMode(mode, byte(result))
 }
 
 func Nop(c *Cpu, mode AddressMode) {
 }
 
 func Ora(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 
 	result := c.Registers.A | operand
 
@@ -606,7 +606,7 @@ func Plp(c *Cpu, mode AddressMode) {
 }
 
 func Rol(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 
 	result := (uint16(operand) << 1) | uint16(c.Registers.P.ReadFlagByte(FlagCarry))
 
@@ -614,11 +614,11 @@ func Rol(c *Cpu, mode AddressMode) {
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
 	c.Registers.P.SetFlag(FlagCarry, postiveCarryHappend(result))
 
-	c.writeByte(mode, byte(result))
+	c.WriteByteByMode(mode, byte(result))
 }
 
 func Ror(c *Cpu, mode AddressMode) {
-	operand := c.readByte(mode)
+	operand := c.ReadByteByMode(mode)
 
 	result := (uint16(operand) >> 1) | uint16(c.Registers.P.ReadFlagByte(FlagCarry)<<7)
 
@@ -626,7 +626,7 @@ func Ror(c *Cpu, mode AddressMode) {
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
 	c.Registers.P.SetFlag(FlagCarry, nesmath.BitSet(operand, 0))
 
-	c.writeByte(mode, byte(result))
+	c.WriteByteByMode(mode, byte(result))
 }
 
 func Rti(c *Cpu, mode AddressMode) {
@@ -641,7 +641,7 @@ func Rts(c *Cpu, mode AddressMode) {
 func Sbc(c *Cpu, mode AddressMode) {
 	// Fucking stole this what the fuck is this shit
 	// Adding to minus too much big brains me think
-	oprand := c.readByte(mode) ^ 0xFF
+	oprand := c.ReadByteByMode(mode) ^ 0xFF
 
 	a := c.Registers.A
 	carry := uint16(c.Registers.P.ReadFlagByte(FlagCarry))
@@ -668,15 +668,15 @@ func Sei(c *Cpu, mode AddressMode) {
 }
 
 func Sta(c *Cpu, mode AddressMode) {
-	c.writeByte(mode, c.Registers.A)
+	c.WriteByteByMode(mode, c.Registers.A)
 }
 
 func Stx(c *Cpu, mode AddressMode) {
-	c.writeByte(mode, c.Registers.X)
+	c.WriteByteByMode(mode, c.Registers.X)
 }
 
 func Sty(c *Cpu, mode AddressMode) {
-	c.writeByte(mode, c.Registers.Y)
+	c.WriteByteByMode(mode, c.Registers.Y)
 }
 
 func Tax(c *Cpu, mode AddressMode) {

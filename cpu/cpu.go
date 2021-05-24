@@ -164,11 +164,20 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return address
 
 	case AddressModeIndirect:
-		operand := c.Memory.ReadUint16At(c.Registers.PC + 1)
-		return c.Memory.ReadUint16At(operand)
+		address := uint16(c.Memory.ReadUint16At(c.Registers.PC + 1))
+		indrectAddress := binary.LittleEndian.Uint16([]byte{
+			c.Memory.ReadByteAt(address),
+			c.Memory.ReadByteAt((address + 1)),
+		})
+		return indrectAddress
 
 	case AddressModeIndirectX:
-		return c.Memory.ReadUint16At(uint16(byteOperand + c.Registers.X))
+		address := (uint16(byteOperand) + uint16(c.Registers.X))
+		indrectAddress := binary.LittleEndian.Uint16([]byte{
+			c.Memory.ReadByteAt(address) & 0xFF,
+			c.Memory.ReadByteAt((address + 1) & 0xFF),
+		})
+		return indrectAddress
 
 	case AddressModeIndirectY:
 		address := uint16(c.Memory.ReadUint16At(uint16(byteOperand))) + uint16(c.Registers.Y)
@@ -182,7 +191,7 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 	}
 }
 
-func (c *Cpu) readByte(mode AddressMode) byte {
+func (c *Cpu) ReadByteByMode(mode AddressMode) byte {
 	switch mode {
 	case AddressModeAccumulator:
 		return c.Registers.A
@@ -192,11 +201,12 @@ func (c *Cpu) readByte(mode AddressMode) byte {
 	}
 }
 
-func (c *Cpu) writeByte(mode AddressMode, value byte) {
+func (c *Cpu) WriteByteByMode(mode AddressMode, value byte) {
 	switch mode {
 	case AddressModeAccumulator:
 		c.Registers.A = value
 	default:
-		c.Memory.WriteByteAt(c.GetOprandAddress(mode), value)
+		address := c.GetOprandAddress(mode)
+		c.Memory.WriteByteAt(address, value)
 	}
 }

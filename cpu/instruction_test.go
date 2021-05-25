@@ -1343,36 +1343,3 @@ func TestTransfers(t *testing.T) {
 		assert.Equal(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), runtime.FuncForPC(reflect.ValueOf(test.inst).Pointer()).Name())
 	}
 }
-
-func TestTrb(t *testing.T) {
-	t.Parallel()
-
-	c := createCpu()
-
-	testCases := []struct {
-		mode cpu.AddressMode
-	}{
-		{mode: cpu.AddressModeZeroPage},
-	}
-
-	for _, test := range testCases {
-		c.Registers.P.Write(0x00)
-
-		writeByteToAddress(c, test.mode, 0b00000001)
-		c.Registers.A = 0b11111110
-
-		cpu.Trb(c, test.mode)
-
-		assert.Equalf(t, uint8(0x01), c.ReadByteByMode(test.mode), "Address Mode %s", test.mode.String())
-		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
-
-		// Zero
-		writeByteToAddress(c, test.mode, 0b00000000)
-		c.Registers.A = 0b11111111
-
-		cpu.Trb(c, test.mode)
-
-		assert.Equalf(t, uint8(0x00), c.ReadByteByMode(test.mode), "Address Mode %s", test.mode.String())
-		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
-	}
-}

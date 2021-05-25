@@ -15,6 +15,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/emulator"
 	"github.com/stretchr/testify/assert"
 )
@@ -203,6 +204,18 @@ func emulatorToTestLine(e *emulator.Emulator, cycles int64) nesTestLine {
 	}
 }
 
+func assertFlags(t *testing.T, expect, act byte) {
+	expectP := cpu.CreateFlagRegister(expect)
+	actP := cpu.CreateFlagRegister(act)
+
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagNegative), actP.ReadFlag(cpu.FlagNegative), "Negative")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagOverflow), actP.ReadFlag(cpu.FlagOverflow), "Overflow")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagDecimal), actP.ReadFlag(cpu.FlagDecimal), "Decimal")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagInteruprtDisable), actP.ReadFlag(cpu.FlagInteruprtDisable), "Interuprt Disable")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagZero), actP.ReadFlag(cpu.FlagZero), "Zero")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagCarry), actP.ReadFlag(cpu.FlagCarry), "Carry")
+}
+
 func TestNesTestRom(t *testing.T) {
 	t.Parallel()
 
@@ -223,7 +236,7 @@ func TestNesTestRom(t *testing.T) {
 
 	cycles := int64(4)
 	lineNum := 1
-	for scanner.Scan() && lineNum < 5151 && !t.Failed() {
+	for scanner.Scan() && lineNum < 5152 && !t.Failed() {
 		line := scanner.Text()
 		nesTestLine := parseNesTestLine(string(line))
 		nesTestEmulator := emulatorToTestLine(e, cycles)
@@ -240,6 +253,7 @@ func TestNesTestRom(t *testing.T) {
 		assert.Equalf(t, nesTestLine.X, nesTestEmulator.X, "Line:%d Opcode:%02X X", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.Y, nesTestEmulator.Y, "Line:%d Opcode:%02X Y", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.P, nesTestEmulator.P, "Line:%d Opcode:%02X P", lineNum, opcode)
+		assertFlags(t, nesTestLine.P, nesTestEmulator.P)
 
 		e.Step()
 		cycles += int64(e.Cpu.Cycles)

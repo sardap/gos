@@ -295,6 +295,7 @@ func init() {
 		0x74: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
 		0xD4: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
 		0xF4: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0x14: {Inst: Nop, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
 		0x1A: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0x3A: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0x5A: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "*NOP"},
@@ -310,8 +311,6 @@ func init() {
 		0xFC: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
 		// SKW Skip word
 		0x0C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeImplied, Name: "*NOP"},
-		// TRB test and reset bit against accumulator
-		0x14: {Inst: Trb, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "*NOP"},
 	}
 }
 
@@ -742,14 +741,4 @@ func Tya(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(c.Registers.Y)))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(c.Registers.Y)))
-}
-
-func Trb(c *Cpu, mode AddressMode) {
-	operand := c.ReadByteByMode(mode)
-
-	result := operand & ^c.Registers.A
-
-	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
-
-	c.WriteByteByMode(mode, result)
 }

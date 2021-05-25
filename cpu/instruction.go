@@ -285,6 +285,20 @@ func init() {
 		0x9A: {Inst: Txs, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "TXS"},
 		// Y -> A
 		0x98: {Inst: Tya, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "TYA"},
+		// 👻​😭​☠️​⚰️​​ UNOFFICIAL OPCODES ⚰️​☠️​​​😭👻
+		// DOP Double Nop
+		0x04: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeImplied, Name: "*NOP"},
+		0x44: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeImplied, Name: "*NOP"},
+		0x64: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeImplied, Name: "*NOP"},
+		0x34: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0x54: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0x74: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0xD4: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0xF4: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		// SKW Skip word
+		0x0C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeImplied, Name: "*NOP"},
+		// TRB test and reset bit against accumulator
+		0x14: {Inst: Trb, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "*NOP"},
 	}
 }
 
@@ -715,4 +729,14 @@ func Tya(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(c.Registers.Y)))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(c.Registers.Y)))
+}
+
+func Trb(c *Cpu, mode AddressMode) {
+	operand := c.ReadByteByMode(mode)
+
+	result := operand & ^c.Registers.A
+
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
+
+	c.WriteByteByMode(mode, result)
 }

@@ -285,7 +285,10 @@ func init() {
 		0x9A: {Inst: Txs, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "TXS"},
 		// Y -> A
 		0x98: {Inst: Tya, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "TYA"},
-		// 👻​😭​☠️​⚰️​​ UNOFFICIAL OPCODES ⚰️​☠️​​​😭👻
+		/*
+		 👻​😭​☠️​⚰️​​ UNOFFICIAL OPCODES ⚰️​☠️​​​😭👻
+		 http://nesdev.com/undocumented_opcodes.txt
+		*/
 		// DOP Double Nop
 		0x04: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0x44: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeImplied, Name: "*NOP"},
@@ -311,13 +314,18 @@ func init() {
 		0xFC: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
 		// SKW Skip word
 		0x0C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeImplied, Name: "*NOP"},
-		// LAX Load accumulator and X register with memory.
+		// LAX M -> A; M -> X
 		0xA7: {Inst: Lax, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LAX oper"},
 		0xB7: {Inst: Lax, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "LAX oper,Y"},
 		0xAF: {Inst: Lax, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LAX oper"},
 		0xBF: {Inst: Lax, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "LAX oper,Y"},
 		0xA3: {Inst: Lax, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "LAX (oper,X)"},
 		0xB3: {Inst: Lax, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "LAX (oper),Y"},
+		// AAX A & M -> M
+		0x87: {Inst: Aax, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "AAX oper"},
+		0x97: {Inst: Aax, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "AAX oper,y"},
+		0x8F: {Inst: Aax, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "AAX AAX oper"},
+		0x83: {Inst: Aax, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "AAX (oper,X)"},
 	}
 }
 
@@ -775,4 +783,13 @@ func Lax(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(operand)))
+}
+
+func Aax(c *Cpu, mode AddressMode) {
+	result := c.Registers.X & c.Registers.A
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(result)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
+
+	c.WriteByteByMode(mode, result)
 }

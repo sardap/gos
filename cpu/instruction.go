@@ -352,6 +352,14 @@ func init() {
 		0x1B: {Inst: Slo, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "SLO oper,Y"},
 		0x03: {Inst: Slo, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "SLO (oper,X)"},
 		0x13: {Inst: Slo, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "SLO (oper),Y"},
+		// RLA ASL; ORA
+		0x27: {Inst: Rla, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "RLA oper"},
+		0x37: {Inst: Rla, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "RLA oper,X"},
+		0x2F: {Inst: Rla, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "RLA oper"},
+		0x3F: {Inst: Rla, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "RLA oper,X"},
+		0x3B: {Inst: Rla, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "RLA oper,Y"},
+		0x23: {Inst: Rla, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "RLA (oper,X)"},
+		0x33: {Inst: Rla, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "RLA (oper),Y"},
 	}
 }
 
@@ -833,4 +841,9 @@ func Isc(c *Cpu, mode AddressMode) {
 func Slo(c *Cpu, mode AddressMode) {
 	Asl(c, mode)
 	Ora(c, mode)
+}
+
+func Rla(c *Cpu, mode AddressMode) {
+	Rol(c, mode)
+	And(c, mode)
 }

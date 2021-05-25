@@ -344,6 +344,14 @@ func init() {
 		0xFB: {Inst: Isc, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "ISC oper,Y"},
 		0xE3: {Inst: Isc, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "ISC (oper,X)"},
 		0xF3: {Inst: Isc, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "ISC (oper),Y"},
+		// SLO ASL; ORA
+		0x07: {Inst: Slo, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "SLO oper"},
+		0x17: {Inst: Slo, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "SLO oper,X"},
+		0x0F: {Inst: Slo, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "SLO oper"},
+		0x1F: {Inst: Slo, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "SLO oper,X"},
+		0x1B: {Inst: Slo, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "SLO oper,Y"},
+		0x03: {Inst: Slo, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "SLO (oper,X)"},
+		0x13: {Inst: Slo, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "SLO (oper),Y"},
 	}
 }
 
@@ -819,4 +827,10 @@ func Dcp(c *Cpu, mode AddressMode) {
 func Isc(c *Cpu, mode AddressMode) {
 	Inc(c, mode)
 	Sbc(c, mode)
+}
+
+// ASD
+func Slo(c *Cpu, mode AddressMode) {
+	Asl(c, mode)
+	Ora(c, mode)
 }

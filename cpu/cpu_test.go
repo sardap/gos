@@ -36,7 +36,17 @@ func TestZeroPageX(t *testing.T) {
 	c.Memory.WriteUint16At(0x1001, 0x01)
 
 	assert.Equal(t, uint16(0x8B), c.GetOprandAddress(cpu.AddressModeZeroPageX))
+}
 
+func TestZeroPageY(t *testing.T) {
+	c := createCpu()
+
+	// Wraping
+	c.Registers.PC = 0x1000
+	c.Registers.Y = 0xFF
+	c.Memory.WriteUint16At(0x1001, 0x80)
+
+	assert.Equal(t, uint16(0x7F), c.GetOprandAddress(cpu.AddressModeZeroPageY))
 }
 
 func TestInderect(t *testing.T) {

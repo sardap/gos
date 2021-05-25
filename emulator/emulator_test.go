@@ -223,7 +223,7 @@ func TestNesTestRom(t *testing.T) {
 
 	cycles := int64(4)
 	lineNum := 1
-	for scanner.Scan() && lineNum < 3067 && !t.Failed() {
+	for scanner.Scan() && lineNum < 3350 && !t.Failed() {
 		line := scanner.Text()
 		nesTestLine := parseNesTestLine(string(line))
 		nesTestEmulator := emulatorToTestLine(e, cycles)
@@ -233,7 +233,7 @@ func TestNesTestRom(t *testing.T) {
 
 		opcode := nesTestEmulator.Opcode
 		// Program Counters
-		assert.Equalf(t, nesTestLine.Opcode, opcode, "Line:%d Opcode:%02X Program Counter", lineNum, opcode)
+		assert.Equalf(t, nesTestLine.Opcode, opcode, "Line:%d Opcode:%02X Opcode", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.PC, nesTestEmulator.PC, "Line:%d Opcode:%02X Program Counter", lineNum, opcode)
 		// Regsiters
 		assert.Equalf(t, nesTestLine.A, nesTestEmulator.A, "Line:%d Opcode:%02X A", lineNum, opcode)

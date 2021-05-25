@@ -23,14 +23,21 @@ func TestPushPopUint16(t *testing.T) {
 func TestInderect(t *testing.T) {
 	c := createCpu()
 
-	// Inderect
-	c.Registers.A = 0
+	// 6502 wraping bug https://atariage.com/forums/topic/72382-6502-indirect-addressing-ff-behavior/
 	c.Registers.PC = 0
-	c.Memory.WriteByteAt(0x01, 0xFF)
-	c.Memory.WriteByteAt(0xFF, 0x5D)
-	c.Memory.WriteByteAt(0x5D, 0x04)
+	c.Memory.WriteUint16At(0x01, 0x02FF)
+	c.Memory.WriteByteAt(0x02FF, 0x00)
+	c.Memory.WriteByteAt(0x0200, 0x03)
 
-	assert.Equal(t, byte(0x04), c.ReadByteByMode(cpu.AddressModeIndirect))
+	assert.Equal(t, uint16(0x0300), c.GetOprandAddress(cpu.AddressModeIndirect))
+
+	// Normal
+	c.Registers.PC = 0
+	c.Memory.WriteUint16At(0x01, 0x02FF)
+	c.Memory.WriteByteAt(0x03FE, 0x00)
+	c.Memory.WriteByteAt(0x03FF, 0x03)
+
+	assert.Equal(t, uint16(0x0300), c.GetOprandAddress(cpu.AddressModeIndirect))
 }
 
 func TestInderectY(t *testing.T) {

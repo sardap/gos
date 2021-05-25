@@ -164,12 +164,19 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return address
 
 	case AddressModeIndirect:
+		// Guess who spent 5 hours staring at this fucking thing
+		// Only to find out it's a bug with the 6502 https://atariage.com/forums/topic/72382-6502-indirect-addressing-ff-behavior/
 		address := uint16(c.Memory.ReadUint16At(c.Registers.PC + 1))
-		indrectAddress := binary.LittleEndian.Uint16([]byte{
-			c.Memory.ReadByteAt(address),
-			c.Memory.ReadByteAt((address + 1)),
+		buffer := make([]byte, 2)
+		binary.LittleEndian.PutUint16(buffer, address)
+		secondAddress := binary.LittleEndian.Uint16([]byte{
+			buffer[0] + 1,
+			buffer[1],
 		})
-		return indrectAddress
+		return binary.LittleEndian.Uint16([]byte{
+			c.Memory.ReadByteAt(address),
+			c.Memory.ReadByteAt(secondAddress),
+		})
 
 	case AddressModeIndirectX:
 		address := uint16(byteOperand) + uint16(c.Registers.X)

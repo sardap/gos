@@ -524,7 +524,6 @@ func Iny(c *Cpu, mode AddressMode) {
 
 func Jmp(c *Cpu, mode AddressMode) {
 	c.Registers.PC = c.GetOprandAddress(mode)
-
 }
 
 // Jsr trick https://wiki.nesdev.com/w/index.php/RTS_Trick

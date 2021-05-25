@@ -328,7 +328,7 @@ func init() {
 		0x83: {Inst: Aax, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "AAX (oper,X)"},
 		// SBC Same as 0xE9
 		0xEB: {Inst: Sbc, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "SBC #oper"},
-		// DCP M - 1 -> M
+		// DCP DEC; CMP
 		0xC7: {Inst: Dcp, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "DCP oper"},
 		0xD7: {Inst: Dcp, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "DCP oper,X"},
 		0xCF: {Inst: Dcp, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "DCP oper"},
@@ -336,6 +336,14 @@ func init() {
 		0xDB: {Inst: Dcp, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "DCP oper,Y"},
 		0xC3: {Inst: Dcp, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "DCP (oper,X)"},
 		0xD3: {Inst: Dcp, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "DCP (oper),Y"},
+		// ISC INC; SBC
+		0xE7: {Inst: Isc, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "ISC oper"},
+		0xF7: {Inst: Isc, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "ISC oper,X"},
+		0xEF: {Inst: Isc, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "ISC oper"},
+		0xFF: {Inst: Isc, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "ISC oper,X"},
+		0xFB: {Inst: Isc, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "ISC oper,Y"},
+		0xE3: {Inst: Isc, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "ISC (oper,X)"},
+		0xF3: {Inst: Isc, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "ISC (oper),Y"},
 	}
 }
 
@@ -805,4 +813,10 @@ func Aax(c *Cpu, mode AddressMode) {
 func Dcp(c *Cpu, mode AddressMode) {
 	Dec(c, mode)
 	Cmp(c, mode)
+}
+
+// ISB INS
+func Isc(c *Cpu, mode AddressMode) {
+	Inc(c, mode)
+	Sbc(c, mode)
 }

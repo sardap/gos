@@ -1581,8 +1581,6 @@ func TestRla(t *testing.T) {
 	}
 
 	for _, test := range testCases {
-		// F07E  23 45    *RLA ($45,X) @ 47 = 0647 = A5    A:B3 X:02 Y:D4 P:E4 SP:FB PPU:190, 28 CYC:21606
-		// F080  EA        NOP                             A:02 X:02 Y:D4 P:65 SP:FB PPU:190, 52 CYC:21614
 		c.Registers.P.Write(0xE4)
 		writeByteToAddress(c, test.mode, 0xA5)
 		c.Registers.A = 0xB3
@@ -1591,5 +1589,34 @@ func TestRla(t *testing.T) {
 
 		assert.Equalf(t, byte(0x02), c.Registers.A, "Address Mode %s", test.mode.String())
 		assert.Equalf(t, byte(0x65), c.Registers.P.Read(), "Address Mode %s", test.mode.String())
+	}
+}
+
+func TestSre(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	testCases := []struct {
+		mode cpu.AddressMode
+	}{
+		{mode: cpu.AddressModeZeroPage},
+		{mode: cpu.AddressModeZeroPageX},
+		{mode: cpu.AddressModeAbsolute},
+		{mode: cpu.AddressModeAbsoluteX},
+		{mode: cpu.AddressModeAbsoluteY},
+		{mode: cpu.AddressModeIndirectX},
+		{mode: cpu.AddressModeIndirectY},
+	}
+
+	for _, test := range testCases {
+		c.Registers.P.Write(0xE4)
+		writeByteToAddress(c, test.mode, 0xA5)
+		c.Registers.A = 0xB3
+
+		cpu.Sre(c, test.mode)
+
+		assert.Equalf(t, byte(0xE1), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, byte(0xE5), c.Registers.P.Read(), "Address Mode %s", test.mode.String())
 	}
 }

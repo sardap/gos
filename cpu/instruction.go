@@ -360,6 +360,14 @@ func init() {
 		0x3B: {Inst: Rla, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "RLA oper,Y"},
 		0x23: {Inst: Rla, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "RLA (oper,X)"},
 		0x33: {Inst: Rla, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "RLA (oper),Y"},
+		// SRE LSE
+		0x47: {Inst: Sre, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "SRE oper"},
+		0x57: {Inst: Sre, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "SRE oper,X"},
+		0x4F: {Inst: Sre, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "SRE oper"},
+		0x5F: {Inst: Sre, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "SRE oper,X"},
+		0x5B: {Inst: Sre, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "SRE oper,Y"},
+		0x43: {Inst: Sre, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "SRE (oper,X)"},
+		0x53: {Inst: Sre, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "SRE (oper),Y"},
 	}
 }
 
@@ -639,7 +647,7 @@ func Lsr(c *Cpu, mode AddressMode) {
 	c.Registers.P.SetFlag(FlagNegative, false)
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
 	// this isn't a mistake
-	c.Registers.P.SetFlag(FlagCarry, zeroHappend(result))
+	c.Registers.P.SetFlag(FlagCarry, oprand&0x01 != 0)
 
 	c.WriteByteByMode(mode, byte(result))
 }
@@ -846,4 +854,10 @@ func Slo(c *Cpu, mode AddressMode) {
 func Rla(c *Cpu, mode AddressMode) {
 	Rol(c, mode)
 	And(c, mode)
+}
+
+// LSA
+func Sre(c *Cpu, mode AddressMode) {
+	Lsr(c, mode)
+	Eor(c, mode)
 }

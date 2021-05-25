@@ -1437,3 +1437,41 @@ func TestAax(t *testing.T) {
 
 	assert.Equal(t, uint8(0x3E&0x17), c.Memory.ReadByteAt(0x0489))
 }
+
+func TestDcp(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	testCases := []struct {
+		mode cpu.AddressMode
+	}{
+		{mode: cpu.AddressModeZeroPage},
+		{mode: cpu.AddressModeZeroPageX},
+		{mode: cpu.AddressModeAbsolute},
+		{mode: cpu.AddressModeAbsoluteX},
+		{mode: cpu.AddressModeAbsoluteY},
+		{mode: cpu.AddressModeIndirectX},
+		{mode: cpu.AddressModeIndirectY},
+	}
+
+	for _, test := range testCases {
+		c.Registers.P.Write(0x64)
+		writeByteToAddress(c, test.mode, 0xEB)
+		c.Registers.A = 0x40
+
+		cpu.Dcp(c, test.mode)
+
+		assert.Equalf(t, byte(0xEA), readByteFromAddress(c, test.mode), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, byte(0x64), c.Registers.P.Read(), "Address Mode %s", test.mode.String())
+
+		c.Registers.P.Write(0xA5)
+		writeByteToAddress(c, test.mode, 0x00)
+		c.Registers.A = 0xFF
+
+		cpu.Dcp(c, test.mode)
+
+		assert.Equalf(t, byte(0xFF), readByteFromAddress(c, test.mode), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, byte(0x27), c.Registers.P.Read(), "Address Mode %s", test.mode.String())
+	}
+}

@@ -326,6 +326,16 @@ func init() {
 		0x97: {Inst: Aax, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "AAX oper,y"},
 		0x8F: {Inst: Aax, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "AAX AAX oper"},
 		0x83: {Inst: Aax, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "AAX (oper,X)"},
+		// SBC Same as 0xE9
+		0xEB: {Inst: Sbc, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "SBC #oper"},
+		// DCP M - 1 -> M
+		0xC7: {Inst: Dcp, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "DCP oper"},
+		0xD7: {Inst: Dcp, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "DCP oper,X"},
+		0xCF: {Inst: Dcp, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "DCP oper"},
+		0xDF: {Inst: Dcp, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "DCP oper,X"},
+		0xDB: {Inst: Dcp, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "DCP oper,Y"},
+		0xC3: {Inst: Dcp, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "DCP (oper,X)"},
+		0xD3: {Inst: Dcp, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "DCP (oper),Y"},
 	}
 }
 
@@ -789,8 +799,10 @@ func Lax(c *Cpu, mode AddressMode) {
 func Aax(c *Cpu, mode AddressMode) {
 	result := c.Registers.X & c.Registers.A
 
-	// c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(result)))
-	// c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
-
 	c.WriteByteByMode(mode, result)
+}
+
+func Dcp(c *Cpu, mode AddressMode) {
+	Dec(c, mode)
+	Cmp(c, mode)
 }

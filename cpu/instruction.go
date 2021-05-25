@@ -311,6 +311,13 @@ func init() {
 		0xFC: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
 		// SKW Skip word
 		0x0C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeImplied, Name: "*NOP"},
+		// LAX Load accumulator and X register with memory.
+		0xA7: {Inst: Lax, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LAX oper"},
+		0xB7: {Inst: Lax, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "LAX oper,Y"},
+		0xAF: {Inst: Lax, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LAX oper"},
+		0xBF: {Inst: Lax, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "LAX oper,Y"},
+		0xA3: {Inst: Lax, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "LAX (oper,X)"},
+		0xB3: {Inst: Lax, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "LAX (oper),Y"},
 	}
 }
 
@@ -741,4 +748,31 @@ func Tya(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(c.Registers.Y)))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(c.Registers.Y)))
+}
+
+/*
+	Hey elitists from LA
+	Los Angeles, California
+	You know who you are
+	You drive big fancy cars
+	Your allowance exceeds my rent
+	Listen to what I have to say
+	Remind yourselves everyday
+	Let's get this message on its way
+
+	First of all:
+
+	Fuck your fucking attitudes
+	How can you be so fucking rude
+	You fucking look at me like when girls are jealous
+	Fuck your fucking LA bars
+*/
+func Lax(c *Cpu, mode AddressMode) {
+	operand := c.ReadByteByMode(mode)
+
+	c.Registers.A = operand
+	c.Registers.X = operand
+
+	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(operand)))
+	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(operand)))
 }

@@ -1343,3 +1343,59 @@ func TestTransfers(t *testing.T) {
 		assert.Equal(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), runtime.FuncForPC(reflect.ValueOf(test.inst).Pointer()).Name())
 	}
 }
+
+func TestLax(t *testing.T) {
+	t.Parallel()
+
+	c := createCpu()
+
+	testCases := []struct {
+		mode cpu.AddressMode
+	}{
+		{mode: cpu.AddressModeZeroPage},
+		{mode: cpu.AddressModeZeroPageY},
+		{mode: cpu.AddressModeAbsolute},
+		{mode: cpu.AddressModeAbsoluteY},
+		{mode: cpu.AddressModeIndirectX},
+		{mode: cpu.AddressModeIndirectY},
+	}
+
+	for _, test := range testCases {
+		c.Registers.P.Write(0)
+
+		writeByteToAddress(c, test.mode, 1)
+		c.Registers.A = 2
+		c.Registers.X = 2
+
+		cpu.Lax(c, test.mode)
+
+		assert.Equalf(t, uint8(1), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, uint8(1), c.Registers.X, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+
+		// Zero
+		writeByteToAddress(c, test.mode, 0)
+		c.Registers.A = 2
+		c.Registers.X = 2
+
+		cpu.Lax(c, test.mode)
+
+		assert.Equalf(t, uint8(0), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, uint8(0), c.Registers.X, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+
+		// Negative
+		writeByteToAddress(c, test.mode, 0b10000000)
+		c.Registers.A = 2
+		c.Registers.X = 2
+
+		cpu.Lax(c, test.mode)
+
+		assert.Equalf(t, uint8(0b10000000), c.Registers.A, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, uint8(0b10000000), c.Registers.X, "Address Mode %s", test.mode.String())
+		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
+		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
+	}
+}

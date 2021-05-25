@@ -20,6 +20,25 @@ func TestPushPopUint16(t *testing.T) {
 	assert.Equal(t, byte(0x13), c.PopByte())
 }
 
+func TestZeroPageX(t *testing.T) {
+	c := createCpu()
+
+	// Wraping
+	c.Registers.PC = 0x1000
+	c.Registers.X = 0x8A
+	c.Memory.WriteUint16At(0x1001, 0xFF)
+
+	assert.Equal(t, uint16(0x89), c.GetOprandAddress(cpu.AddressModeZeroPageX))
+
+	// Normal
+	c.Registers.PC = 0x1000
+	c.Registers.X = 0x8A
+	c.Memory.WriteUint16At(0x1001, 0x01)
+
+	assert.Equal(t, uint16(0x8B), c.GetOprandAddress(cpu.AddressModeZeroPageX))
+
+}
+
 func TestInderect(t *testing.T) {
 	c := createCpu()
 

@@ -223,7 +223,7 @@ func TestNesTestRom(t *testing.T) {
 
 	cycles := int64(4)
 	lineNum := 1
-	for scanner.Scan() && lineNum < 3350 && !t.Failed() {
+	for scanner.Scan() && lineNum < 3656 && !t.Failed() {
 		line := scanner.Text()
 		nesTestLine := parseNesTestLine(string(line))
 		nesTestEmulator := emulatorToTestLine(e, cycles)

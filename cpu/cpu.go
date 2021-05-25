@@ -141,7 +141,7 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return uint16(byteOperand)
 
 	case AddressModeZeroPageX:
-		return uint16(c.Memory.ReadByteAt(c.Registers.PC+1)) + uint16(c.Registers.X)&0x00FF
+		return nesmath.WrapUint16(uint16(byteOperand)+uint16(c.Registers.X), 0xFF)
 
 	case AddressModeZeroPageY:
 		return uint16(c.Memory.ReadByteAt(c.Registers.PC+1)) + uint16(c.Registers.Y)&0x00FF

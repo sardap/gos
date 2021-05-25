@@ -1424,29 +1424,16 @@ func TestAax(t *testing.T) {
 		cpu.Aax(c, test.mode)
 
 		assert.Equalf(t, uint8(0b00001000), readByteFromAddress(c, test.mode), "Address Mode %s", test.mode.String())
-		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
-		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
-
-		// Negative
-		writeByteToAddress(c, test.mode, 0xFF)
-		c.Registers.A = 0b10001010
-		c.Registers.X = 0b10101001
-
-		cpu.Aax(c, test.mode)
-
-		assert.Equalf(t, uint8(0b10001000), readByteFromAddress(c, test.mode), "Address Mode %s", test.mode.String())
-		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
-		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
-
-		// Zero
-		writeByteToAddress(c, test.mode, 0xFF)
-		c.Registers.A = 0b00001010
-		c.Registers.X = 0b10100001
-
-		cpu.Aax(c, test.mode)
-
-		assert.Equalf(t, uint8(0x00), readByteFromAddress(c, test.mode), "Address Mode %s", test.mode.String())
-		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
-		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
 	}
+
+	c.Registers.A = 0x3E
+	c.Registers.X = 0x17
+	c.Registers.PC = 0
+	c.Memory.WriteByteAt(0x01, 0x49)
+	c.Memory.WriteByteAt(0x60, 0x89)
+	c.Memory.WriteByteAt(0x61, 0x04)
+
+	cpu.Aax(c, cpu.AddressModeIndirectX)
+
+	assert.Equal(t, uint8(0x3E&0x17), c.Memory.ReadByteAt(0x0489))
 }

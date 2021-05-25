@@ -785,11 +785,12 @@ func Lax(c *Cpu, mode AddressMode) {
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(operand)))
 }
 
+// SAX
 func Aax(c *Cpu, mode AddressMode) {
 	result := c.Registers.X & c.Registers.A
 
-	c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(result)))
-	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
+	// c.Registers.P.SetFlag(FlagNegative, negativeHappend(uint16(result)))
+	// c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(result)))
 
 	c.WriteByteByMode(mode, result)
 }

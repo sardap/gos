@@ -112,7 +112,7 @@ type nesTestLine struct {
 
 func (n nesTestLine) String() string {
 	return fmt.Sprintf(
-		"PC:%04X Opcode:%02X A:%02X X:%02X Y:%02X P:%02X SP:%02X Cyc:%02X",
+		"PC:%04X Opcode:%02X A:%02X X:%02X Y:%02X P:%02X SP:%02X Cyc:%d",
 		n.PC, n.Opcode, n.A, n.X, n.Y, n.P, n.SP, n.Cyc,
 	)
 }
@@ -216,7 +216,7 @@ func assertFlags(t *testing.T, expect, act byte) {
 	assert.Equal(t, expectP.ReadFlag(cpu.FlagCarry), actP.ReadFlag(cpu.FlagCarry), "Carry")
 }
 
-func TestNesTestRom(t *testing.T) {
+func TestNestestRom(t *testing.T) {
 	t.Parallel()
 
 	e := emulator.Create()
@@ -234,7 +234,7 @@ func TestNesTestRom(t *testing.T) {
 		scanner = bufio.NewScanner(bytes.NewBuffer(testRomLog))
 	}()
 
-	cycles := int64(4)
+	cycles := int64(7)
 	lineNum := 1
 	for scanner.Scan() && !t.Failed() {
 		line := scanner.Text()
@@ -248,6 +248,7 @@ func TestNesTestRom(t *testing.T) {
 		// Program Counters
 		assert.Equalf(t, nesTestLine.Opcode, opcode, "Line:%d Opcode:%02X Opcode", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.PC, nesTestEmulator.PC, "Line:%d Opcode:%02X Program Counter", lineNum, opcode)
+		assert.Equalf(t, nesTestLine.Cyc, cycles, "Line:%d Opcode:%02X Cycles", lineNum, opcode)
 		// Regsiters
 		assert.Equalf(t, nesTestLine.A, nesTestEmulator.A, "Line:%d Opcode:%02X A", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.X, nesTestEmulator.X, "Line:%d Opcode:%02X X", lineNum, opcode)
@@ -258,7 +259,6 @@ func TestNesTestRom(t *testing.T) {
 		e.Step()
 		cycles += int64(e.Cpu.Cycles)
 
-		// assert.Equalf(t, nesTestLine.Cyc, cycles, "Line:%d Opcode:%02X Cycles", lineNum, opcode)
 		lineNum++
 	}
 }

@@ -2,7 +2,6 @@ package cpu
 
 import (
 	"fmt"
-	"math"
 
 	nesmath "github.com/sardap/gos/math"
 )
@@ -60,11 +59,12 @@ const (
 type Instruction func(c *Cpu, mode AddressMode)
 
 type Operation struct {
-	Name        string
-	Inst        Instruction
-	Length      uint16
-	MinCycles   int
-	AddressMode AddressMode
+	Name               string
+	Inst               Instruction
+	Length             uint16
+	MinCycles          int
+	AddressMode        AddressMode
+	CanHaveExtraCycles bool
 }
 
 var (
@@ -78,19 +78,19 @@ func init() {
 		0x65: {Inst: Adc, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "ADC oper"},
 		0x75: {Inst: Adc, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "ADC oper,X"},
 		0x6D: {Inst: Adc, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "ADC oper"},
-		0x7D: {Inst: Adc, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "ADC oper,X"},
-		0x79: {Inst: Adc, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "ADC oper,Y"},
+		0x7D: {Inst: Adc, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "ADC oper,X"},
+		0x79: {Inst: Adc, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "ADC oper,Y"},
 		0x61: {Inst: Adc, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "ADC (oper,X)"},
-		0x71: {Inst: Adc, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "ADC (oper),Y"},
+		0x71: {Inst: Adc, Length: 2, MinCycles: 5, CanHaveExtraCycles: true, AddressMode: AddressModeIndirectY, Name: "ADC (oper),Y"},
 		// And A AND M -> A
 		0x29: {Inst: And, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "AND #oper"},
 		0x25: {Inst: And, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "AND oper"},
 		0x35: {Inst: And, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "AND oper,X"},
 		0x2D: {Inst: And, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "AND oper"},
-		0x3D: {Inst: And, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "AND oper,X"},
-		0x39: {Inst: And, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "AND oper,Y"},
+		0x3D: {Inst: And, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "AND oper,X"},
+		0x39: {Inst: And, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "AND oper,Y"},
 		0x21: {Inst: And, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "AND (oper,X)"},
-		0x31: {Inst: And, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "AND (oper),Y"},
+		0x31: {Inst: And, Length: 2, MinCycles: 5, CanHaveExtraCycles: true, AddressMode: AddressModeIndirectY, Name: "AND (oper),Y"},
 		// Asl C <- [76543210] <- 0
 		0x0A: {Inst: Asl, Length: 1, MinCycles: 2, AddressMode: AddressModeAccumulator, Name: "ASL A"},
 		0x06: {Inst: Asl, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "ASL oper"},
@@ -102,23 +102,23 @@ func init() {
 			Extra cycles
 		*/
 		// Bcc branch on C = 0
-		0x90: {Inst: Bcc, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCC oper"},
+		0x90: {Inst: Bcc, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BCC oper"},
 		// Branch on Carry Set
-		0xB0: {Inst: Bcs, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BCS oper"},
+		0xB0: {Inst: Bcs, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BCS oper"},
 		// Branch on Result Zero
-		0xF0: {Inst: Beq, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BEQ oper"},
+		0xF0: {Inst: Beq, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BEQ oper"},
 		// Branch on Result Minus
-		0x30: {Inst: Bmi, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BMI oper"},
+		0x30: {Inst: Bmi, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BMI oper"},
 		// Branch on Result not Zero
-		0xD0: {Inst: Bne, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BNE oper"},
+		0xD0: {Inst: Bne, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BNE oper"},
 		// Branch on Result Plus
-		0x10: {Inst: Bpl, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BPL oper"},
+		0x10: {Inst: Bpl, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BPL oper"},
 		// interrupt; push PC+2; push SR
-		0x00: {Inst: Brk, Length: 1, MinCycles: 7, AddressMode: AddressModeImplied, Name: "BRK"},
+		0x00: {Inst: Brk, Length: 1, MinCycles: 7, CanHaveExtraCycles: true, AddressMode: AddressModeImplied, Name: "BRK"},
 		// Branch on Overflow Clear
-		0x50: {Inst: Bvc, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVC oper"},
+		0x50: {Inst: Bvc, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BVC oper"},
 		// Branch on Overflow Set
-		0x70: {Inst: Bvs, Length: 2, MinCycles: 2, AddressMode: AddressModeRelative, Name: "BVS oper"},
+		0x70: {Inst: Bvs, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BVS oper"},
 		// A AND M, M7 -> N, M6 -> V
 		0x24: {Inst: Bit, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "BIT oper"},
 		0x2C: {Inst: Bit, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "BIT oper"},
@@ -136,10 +136,10 @@ func init() {
 		0xC5: {Inst: Cmp, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "CMP oper"},
 		0xD5: {Inst: Cmp, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "CMP oper,X"},
 		0xCD: {Inst: Cmp, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "CMP oper"},
-		0xDD: {Inst: Cmp, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "CMP oper,X"},
-		0xD9: {Inst: Cmp, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "CMP oper,Y"},
+		0xDD: {Inst: Cmp, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "CMP oper,X"},
+		0xD9: {Inst: Cmp, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "CMP oper,Y"},
 		0xC1: {Inst: Cmp, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "CMP (oper,X)"},
-		0xD1: {Inst: Cmp, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "CMP (oper),Y"},
+		0xD1: {Inst: Cmp, Length: 2, MinCycles: 5, CanHaveExtraCycles: true, AddressMode: AddressModeIndirectY, Name: "CMP (oper),Y"},
 		// X - M
 		0xE0: {Inst: Cpx, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "CPX #oper"},
 		0xE4: {Inst: Cpx, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "CPX oper"},
@@ -162,10 +162,10 @@ func init() {
 		0x45: {Inst: Eor, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "EOR oper"},
 		0x55: {Inst: Eor, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "EOR oper,X"},
 		0x4D: {Inst: Eor, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "EOR oper"},
-		0x5D: {Inst: Eor, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "EOR oper,X"}, //Extra cycles
-		0x59: {Inst: Eor, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "EOR oper,Y"}, //Extra cycles
+		0x5D: {Inst: Eor, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "EOR oper,X"}, //Extra cycles
+		0x59: {Inst: Eor, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "EOR oper,Y"}, //Extra cycles
 		0x41: {Inst: Eor, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "EOR (oper,X)"},
-		0x51: {Inst: Eor, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "EOR (oper),Y"}, //Extra cycles
+		0x51: {Inst: Eor, Length: 2, MinCycles: 5, CanHaveExtraCycles: true, AddressMode: AddressModeIndirectY, Name: "EOR (oper),Y"}, //Extra cycles
 		// M + 1 -> M
 		0xE6: {Inst: Inc, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "INC oper"},
 		0xF6: {Inst: Inc, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "INC oper,X"},
@@ -185,22 +185,22 @@ func init() {
 		0xA5: {Inst: Lda, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LDA oper"},
 		0xB5: {Inst: Lda, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "LDA oper,X"},
 		0xAD: {Inst: Lda, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LDA oper"},
-		0xBD: {Inst: Lda, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "LDA oper,X"}, // Extra Cycles
-		0xB9: {Inst: Lda, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "LDA oper,Y"}, // Extra Cycles
+		0xBD: {Inst: Lda, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "LDA oper,X"}, // Extra Cycles
+		0xB9: {Inst: Lda, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "LDA oper,Y"}, // Extra Cycles
 		0xA1: {Inst: Lda, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "LDA (oper,X)"},
-		0xB1: {Inst: Lda, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "LDA (oper),Y"}, // Extra Cycles
+		0xB1: {Inst: Lda, Length: 2, MinCycles: 5, CanHaveExtraCycles: true, AddressMode: AddressModeIndirectY, Name: "LDA (oper),Y"}, // Extra Cycles
 		// M -> X
 		0xA2: {Inst: Ldx, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "LDX #oper"},
 		0xA6: {Inst: Ldx, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LDX oper"},
 		0xB6: {Inst: Ldx, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "LDX oper,Y"},
 		0xAE: {Inst: Ldx, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LDX oper"},
-		0xBE: {Inst: Ldx, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "LDX oper,Y"}, // Extra Cycles
+		0xBE: {Inst: Ldx, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "LDX oper,Y"}, // Extra Cycles
 		// M -> Y
 		0xA0: {Inst: Ldy, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "LDY #oper"},
 		0xA4: {Inst: Ldy, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LDY oper"},
 		0xB4: {Inst: Ldy, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "LDY oper,X"},
 		0xAC: {Inst: Ldy, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LDY oper"},
-		0xBC: {Inst: Ldy, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "LDY oper,X"}, // Extra Cycles
+		0xBC: {Inst: Ldy, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "LDY oper,X"}, // Extra Cycles
 		// 0 -> [76543210] -> C
 		0x4A: {Inst: Lsr, Length: 1, MinCycles: 2, AddressMode: AddressModeAccumulator, Name: "LSR A"},
 		0x46: {Inst: Lsr, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "LSR oper"},
@@ -214,10 +214,10 @@ func init() {
 		0x05: {Inst: Ora, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "ORA oper"},
 		0x15: {Inst: Ora, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "ORA oper,X"},
 		0x0D: {Inst: Ora, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "ORA oper"},
-		0x1D: {Inst: Ora, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "ORA oper,X"}, //Extra cycles
-		0x19: {Inst: Ora, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "ORA oper,Y"}, //Extra cycles
+		0x1D: {Inst: Ora, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "ORA oper,X"}, //Extra cycles
+		0x19: {Inst: Ora, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "ORA oper,Y"}, //Extra cycles
 		0x01: {Inst: Ora, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "ORA (oper,X)"},
-		0x11: {Inst: Ora, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "ORA (oper),Y"}, //Extra cycles
+		0x11: {Inst: Ora, Length: 2, MinCycles: 5, CanHaveExtraCycles: true, AddressMode: AddressModeIndirectY, Name: "ORA (oper),Y"}, //Extra cycles
 		// push A
 		0x48: {Inst: Pha, Length: 1, MinCycles: 3, AddressMode: AddressModeImplied, Name: "PHA"},
 		// push SR
@@ -247,10 +247,10 @@ func init() {
 		0xE5: {Inst: Sbc, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "SBC oper"},
 		0xF5: {Inst: Sbc, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "SBC oper,X"},
 		0xED: {Inst: Sbc, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "SBC oper"},
-		0xFD: {Inst: Sbc, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "SBC oper,X"}, //Extra cycles
-		0xF9: {Inst: Sbc, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "SBC oper,Y"}, //Extra cycles
+		0xFD: {Inst: Sbc, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "SBC oper,X"}, //Extra cycles
+		0xF9: {Inst: Sbc, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "SBC oper,Y"}, //Extra cycles
 		0xE1: {Inst: Sbc, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "SBC (oper,X)"},
-		0xF1: {Inst: Sbc, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "SBC (oper),Y"}, //Extra cycles
+		0xF1: {Inst: Sbc, Length: 2, MinCycles: 5, CanHaveExtraCycles: true, AddressMode: AddressModeIndirectY, Name: "SBC (oper),Y"}, //Extra cycles
 		// 1 -> C
 		0x38: {Inst: Sec, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "SEC"},
 		// 1 -> D
@@ -293,12 +293,12 @@ func init() {
 		0x04: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0x44: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0x64: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeImplied, Name: "*NOP"},
-		0x34: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
-		0x54: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
-		0x74: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
-		0xD4: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
-		0xF4: {Inst: Nop, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
-		0x14: {Inst: Nop, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0x34: {Inst: Nop, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0x54: {Inst: Nop, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0x74: {Inst: Nop, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0xD4: {Inst: Nop, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0xF4: {Inst: Nop, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
+		0x14: {Inst: Nop, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "*NOP"},
 		0x1A: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0x3A: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0x5A: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "*NOP"},
@@ -306,21 +306,21 @@ func init() {
 		0xDA: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0xFA: {Inst: Nop, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "*NOP"},
 		0x80: {Inst: Nop, Length: 2, MinCycles: 2, AddressMode: AddressModeImmediate, Name: "*NOP"},
-		0x1C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "*NOP"},
-		0x3C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
-		0x5C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
-		0x7C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
-		0xDC: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
-		0xFC: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
+		0x1C: {Inst: Top, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
+		0x3C: {Inst: Top, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
+		0x5C: {Inst: Top, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
+		0x7C: {Inst: Top, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
+		0xDC: {Inst: Top, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
+		0xFC: {Inst: Top, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteX, Name: "*NOP"},
 		// SKW Skip word
 		0x0C: {Inst: Nop, Length: 3, MinCycles: 4, AddressMode: AddressModeImplied, Name: "*NOP"},
 		// LAX M -> A; M -> X
 		0xA7: {Inst: Lax, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "LAX oper"},
 		0xB7: {Inst: Lax, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "LAX oper,Y"},
 		0xAF: {Inst: Lax, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "LAX oper"},
-		0xBF: {Inst: Lax, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsoluteY, Name: "LAX oper,Y"},
+		0xBF: {Inst: Lax, Length: 3, MinCycles: 4, CanHaveExtraCycles: true, AddressMode: AddressModeAbsoluteY, Name: "LAX oper,Y"},
 		0xA3: {Inst: Lax, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectX, Name: "LAX (oper,X)"},
-		0xB3: {Inst: Lax, Length: 2, MinCycles: 5, AddressMode: AddressModeIndirectY, Name: "LAX (oper),Y"},
+		0xB3: {Inst: Lax, Length: 2, MinCycles: 5, CanHaveExtraCycles: true, AddressMode: AddressModeIndirectY, Name: "LAX (oper),Y"},
 		// AAX A & M -> M
 		0x87: {Inst: Aax, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "AAX oper"},
 		0x97: {Inst: Aax, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "AAX oper,y"},
@@ -381,10 +381,6 @@ func init() {
 
 func GetOpcodes() map[byte]*Operation {
 	return opcodes
-}
-
-func samePage(a, b uint16) bool {
-	return 256/math.Max(1, float64(a)) != 256/math.Max(1, float64(b))
 }
 
 func overflowHappend(left, right, result byte) bool {
@@ -458,12 +454,10 @@ func branchOnFlag(c *Cpu, flag bool) {
 	if flag {
 		c.Registers.PC += uint16(int8(c.Memory.ReadByteAt(c.Registers.PC + 1)))
 
-		oldPage := orginalAddress / 256
-		newPage := c.Registers.PC / 256
-		if oldPage == newPage {
+		c.ExtraCycles++
+		// it cares about the target address page not the source address page
+		if diffrentPages(orginalAddress+2, c.Registers.PC+2) {
 			c.ExtraCycles++
-		} else {
-			c.ExtraCycles += 2
 		}
 	}
 }
@@ -873,4 +867,8 @@ func Sre(c *Cpu, mode AddressMode) {
 func Rra(c *Cpu, mode AddressMode) {
 	Ror(c, mode)
 	Adc(c, mode)
+}
+
+func Top(c *Cpu, mode AddressMode) {
+	c.GetOprandAddress(mode)
 }

@@ -780,32 +780,31 @@ func TestLd(t *testing.T) {
 	c := createCpu()
 
 	testCases := []struct {
-		mode       cpu.AddressMode
-		extraCycle bool
-		inst       cpu.Instruction
-		reg        *byte
+		mode cpu.AddressMode
+		inst cpu.Instruction
+		reg  *byte
 	}{
 		// LDA
-		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeImmediate, extraCycle: false},
-		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeZeroPage, extraCycle: false},
-		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeZeroPageX, extraCycle: false},
-		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsolute, extraCycle: false},
-		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsoluteX, extraCycle: true},
-		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsoluteY, extraCycle: true},
-		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeIndirectX, extraCycle: false},
-		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeIndirectY, extraCycle: true},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeImmediate},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeZeroPage},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeZeroPageX},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsolute},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsoluteX},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeAbsoluteY},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeIndirectX},
+		{inst: cpu.Lda, reg: &c.Registers.A, mode: cpu.AddressModeIndirectY},
 		// LDX
-		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeImmediate, extraCycle: false},
-		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeZeroPage, extraCycle: false},
-		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeZeroPageY, extraCycle: false},
-		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeAbsolute, extraCycle: false},
-		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeAbsoluteY, extraCycle: true},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeImmediate},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeZeroPage},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeZeroPageY},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeAbsolute},
+		{inst: cpu.Ldx, reg: &c.Registers.X, mode: cpu.AddressModeAbsoluteY},
 		// LDY
-		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeImmediate, extraCycle: false},
-		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeZeroPage, extraCycle: false},
-		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeZeroPageX, extraCycle: false},
-		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeAbsolute, extraCycle: false},
-		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeAbsoluteX, extraCycle: true},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeImmediate},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeZeroPage},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeZeroPageX},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeAbsolute},
+		{inst: cpu.Ldy, reg: &c.Registers.Y, mode: cpu.AddressModeAbsoluteX},
 	}
 
 	for _, test := range testCases {
@@ -821,9 +820,6 @@ func TestLd(t *testing.T) {
 		assert.Equalf(t, byte(0b00100000), *test.reg, "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
-		if test.extraCycle {
-			assert.Equalf(t, byte(1), c.ExtraCycles, "Address Mode %s", test.mode.String())
-		}
 
 		// Load zero
 		c.ExtraCycles = 0
@@ -835,9 +831,6 @@ func TestLd(t *testing.T) {
 		assert.Equalf(t, byte(0b00000000), *test.reg, "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
-		if test.extraCycle {
-			assert.Equalf(t, byte(1), c.ExtraCycles, "Address Mode %s", test.mode.String())
-		}
 
 		// Neg load
 		c.ExtraCycles = 0
@@ -849,9 +842,6 @@ func TestLd(t *testing.T) {
 		assert.Equalf(t, byte(0b10000000), *test.reg, "Address Mode %s", test.mode.String())
 		assert.Equalf(t, true, c.Registers.P.ReadFlag(cpu.FlagNegative), "Address Mode %s", test.mode.String())
 		assert.Equalf(t, false, c.Registers.P.ReadFlag(cpu.FlagZero), "Address Mode %s", test.mode.String())
-		if test.extraCycle {
-			assert.Equalf(t, byte(1), c.ExtraCycles, "Address Mode %s", test.mode.String())
-		}
 	}
 }
 

@@ -126,8 +126,15 @@ func (c *Cpu) Excute() {
 	operation.Inst(c, operation.AddressMode)
 
 	c.Registers.PC += operation.Length
-	c.Cycles += operation.MinCycles + int(c.ExtraCycles)
+	c.Cycles += operation.MinCycles
+	if operation.CanHaveExtraCycles {
+		c.Cycles += int(c.ExtraCycles)
+	}
 	c.ExtraCycles = 0
+}
+
+func diffrentPages(old, new uint16) bool {
+	return old&0xFF00 != new&0xFF00
 }
 
 func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
@@ -150,18 +157,18 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return c.Memory.ReadUint16At(c.Registers.PC + 1)
 
 	case AddressModeAbsoluteX:
-		address := c.Memory.ReadUint16At(c.Registers.PC+1) + uint16(c.Registers.X)
-		if samePage(address, c.Registers.PC) {
+		address := c.Memory.ReadUint16At(c.Registers.PC + 1)
+		if diffrentPages(address, address+uint16(c.Registers.X)) {
 			c.ExtraCycles++
 		}
-		return address
+		return address + uint16(c.Registers.X)
 
 	case AddressModeAbsoluteY:
-		address := c.Memory.ReadUint16At(c.Registers.PC+1) + uint16(c.Registers.Y)
-		if samePage(address, c.Registers.PC) {
+		address := c.Memory.ReadUint16At(c.Registers.PC + 1)
+		if diffrentPages(address, address+uint16(c.Registers.Y)) {
 			c.ExtraCycles++
 		}
-		return address
+		return address + uint16(c.Registers.Y)
 
 	case AddressModeIndirect:
 		// Guess who spent 5 hours staring at this fucking thing
@@ -191,7 +198,7 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 			c.Memory.ReadByteAt(nesmath.WrapUint16(uint16(byteOperand)+1, 0xFF)),
 		})
 		address := indirect + uint16(c.Registers.Y)
-		if samePage(address, c.Registers.PC) {
+		if diffrentPages(address, indirect) {
 			c.ExtraCycles++
 		}
 		return address

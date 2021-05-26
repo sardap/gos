@@ -267,12 +267,12 @@ func init() {
 		0x91: {Inst: Sta, Length: 2, MinCycles: 6, AddressMode: AddressModeIndirectY, Name: "STA (oper),Y"},
 		// X -> M
 		0x86: {Inst: Stx, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "STX oper"},
-		0x96: {Inst: Stx, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "STA oper,Y"},
-		0x8E: {Inst: Stx, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "STA oper"},
+		0x96: {Inst: Stx, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageY, Name: "STX oper,Y"},
+		0x8E: {Inst: Stx, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "STX oper"},
 		// Y -> M
-		0x84: {Inst: Sty, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "STX oper"},
-		0x94: {Inst: Sty, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "STA oper,X"},
-		0x8C: {Inst: Sty, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "STA oper"},
+		0x84: {Inst: Sty, Length: 2, MinCycles: 3, AddressMode: AddressModeZeroPage, Name: "STY oper"},
+		0x94: {Inst: Sty, Length: 2, MinCycles: 4, AddressMode: AddressModeZeroPageX, Name: "STY oper,X"},
+		0x8C: {Inst: Sty, Length: 3, MinCycles: 4, AddressMode: AddressModeAbsolute, Name: "STY oper"},
 		// A -> X
 		0xAA: {Inst: Tax, Length: 1, MinCycles: 2, AddressMode: AddressModeImplied, Name: "TAX"},
 		// A -> Y
@@ -360,7 +360,7 @@ func init() {
 		0x3B: {Inst: Rla, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "RLA oper,Y"},
 		0x23: {Inst: Rla, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "RLA (oper,X)"},
 		0x33: {Inst: Rla, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "RLA (oper),Y"},
-		// SRE LSE
+		// SRE LSR; EOR
 		0x47: {Inst: Sre, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "SRE oper"},
 		0x57: {Inst: Sre, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "SRE oper,X"},
 		0x4F: {Inst: Sre, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "SRE oper"},
@@ -368,6 +368,14 @@ func init() {
 		0x5B: {Inst: Sre, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "SRE oper,Y"},
 		0x43: {Inst: Sre, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "SRE (oper,X)"},
 		0x53: {Inst: Sre, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "SRE (oper),Y"},
+		// RRA ROR; ADC
+		0x67: {Inst: Rra, Length: 2, MinCycles: 5, AddressMode: AddressModeZeroPage, Name: "RRA oper"},
+		0x77: {Inst: Rra, Length: 2, MinCycles: 6, AddressMode: AddressModeZeroPageX, Name: "RRA oper,X"},
+		0x6F: {Inst: Rra, Length: 3, MinCycles: 6, AddressMode: AddressModeAbsolute, Name: "RRA oper"},
+		0x7F: {Inst: Rra, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteX, Name: "RRA oper,X"},
+		0x7B: {Inst: Rra, Length: 3, MinCycles: 7, AddressMode: AddressModeAbsoluteY, Name: "RRA oper,Y"},
+		0x63: {Inst: Rra, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectX, Name: "RRA (oper,X)"},
+		0x73: {Inst: Rra, Length: 2, MinCycles: 8, AddressMode: AddressModeIndirectY, Name: "RRA (oper),Y"},
 	}
 }
 
@@ -860,4 +868,9 @@ func Rla(c *Cpu, mode AddressMode) {
 func Sre(c *Cpu, mode AddressMode) {
 	Lsr(c, mode)
 	Eor(c, mode)
+}
+
+func Rra(c *Cpu, mode AddressMode) {
+	Ror(c, mode)
+	Adc(c, mode)
 }

@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/sardap/gos/apu"
 )
 
 const (
@@ -20,11 +22,13 @@ type Memory struct {
 	iRam         [0x0800]byte
 	cart         Cart
 	PpuRegisters *PpuRegisters
+	Apu          *apu.Apu
 }
 
 func Create() *Memory {
 	return &Memory{
 		PpuRegisters: CreatePpuRegisters(),
+		Apu:          apu.Create(),
 	}
 }
 
@@ -54,7 +58,7 @@ func (m *Memory) WriteByteAt(address uint16, value byte) {
 		m.PpuRegisters.WriteByteAt(0x2000+address%8, value)
 	//APU and IO
 	case address >= 0x4000 && address <= 0x4017:
-		panic(fmt.Errorf("APU and IO regsiters not created"))
+		m.Apu.WriteByteAt(address, value)
 	//Funky APU and IO
 	case address >= 0x4018 && address <= 0x401F:
 		panic(fmt.Errorf("funky APU and IO not created"))
@@ -91,7 +95,7 @@ func (m *Memory) ReadByteAt(address uint16) byte {
 		return m.PpuRegisters.ReadByteAt(0x2000 + address%8)
 	//APU and IO
 	case address >= 0x4000 && address <= 0x4017:
-		panic(fmt.Errorf("APU and IO regsiters not created"))
+		return m.Apu.ReadByteAt(address)
 	//Funky APU and IO
 	case address >= 0x4018 && address <= 0x401F:
 		panic(fmt.Errorf("funky APU and IO not created"))

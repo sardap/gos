@@ -15,6 +15,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/emulator"
 	"github.com/stretchr/testify/assert"
 )
@@ -203,6 +204,18 @@ func emulatorToTestLine(e *emulator.Emulator, cycles int64) nesTestLine {
 	}
 }
 
+func assertFlags(t *testing.T, expect, act byte) {
+	expectP := cpu.CreateFlagRegister(expect)
+	actP := cpu.CreateFlagRegister(act)
+
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagNegative), actP.ReadFlag(cpu.FlagNegative), "Negative")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagOverflow), actP.ReadFlag(cpu.FlagOverflow), "Overflow")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagDecimal), actP.ReadFlag(cpu.FlagDecimal), "Decimal")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagInteruprtDisable), actP.ReadFlag(cpu.FlagInteruprtDisable), "Interuprt Disable")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagZero), actP.ReadFlag(cpu.FlagZero), "Zero")
+	assert.Equal(t, expectP.ReadFlag(cpu.FlagCarry), actP.ReadFlag(cpu.FlagCarry), "Carry")
+}
+
 func TestNesTestRom(t *testing.T) {
 	t.Parallel()
 
@@ -222,8 +235,8 @@ func TestNesTestRom(t *testing.T) {
 	}()
 
 	cycles := int64(4)
-	lineNum := 0
-	for scanner.Scan() && lineNum < 72 {
+	lineNum := 1
+	for scanner.Scan() && !t.Failed() {
 		line := scanner.Text()
 		nesTestLine := parseNesTestLine(string(line))
 		nesTestEmulator := emulatorToTestLine(e, cycles)
@@ -233,13 +246,14 @@ func TestNesTestRom(t *testing.T) {
 
 		opcode := nesTestEmulator.Opcode
 		// Program Counters
-		assert.Equalf(t, nesTestLine.Opcode, opcode, "Line:%d Opcode:%02X Program Counter", lineNum, opcode)
+		assert.Equalf(t, nesTestLine.Opcode, opcode, "Line:%d Opcode:%02X Opcode", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.PC, nesTestEmulator.PC, "Line:%d Opcode:%02X Program Counter", lineNum, opcode)
 		// Regsiters
 		assert.Equalf(t, nesTestLine.A, nesTestEmulator.A, "Line:%d Opcode:%02X A", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.X, nesTestEmulator.X, "Line:%d Opcode:%02X X", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.Y, nesTestEmulator.Y, "Line:%d Opcode:%02X Y", lineNum, opcode)
 		assert.Equalf(t, nesTestLine.P, nesTestEmulator.P, "Line:%d Opcode:%02X P", lineNum, opcode)
+		assertFlags(t, nesTestLine.P, nesTestEmulator.P)
 
 		e.Step()
 		cycles += int64(e.Cpu.Cycles)
@@ -247,4 +261,65 @@ func TestNesTestRom(t *testing.T) {
 		// assert.Equalf(t, nesTestLine.Cyc, cycles, "Line:%d Opcode:%02X Cycles", lineNum, opcode)
 		lineNum++
 	}
+}
+
+type testCart struct {
+	data [0x10000]byte
+}
+
+func (c *testCart) WriteBytesPrg(value []byte) error {
+	return nil
+}
+
+func (c *testCart) WriteBytesChr(value []byte) error {
+	return nil
+}
+
+func (c *testCart) WriteByteAt(address uint16, value byte) {
+	c.data[address] = value
+}
+
+func (c *testCart) ReadByteAt(address uint16) byte {
+	return c.data[address]
+}
+
+func TestRtsTrick(t *testing.T) {
+	t.Parallel()
+
+	e := emulator.Create()
+	e.Memory.SetCart(&testCart{})
+	e.Cpu.Registers.PC = 0xC0E0
+
+	// 0xC0E0 JSR $8000
+	e.Memory.WriteByteAt(0xC0E0, 0x20)
+	e.Memory.WriteByteAt(0xC0E1, 0x00)
+	e.Memory.WriteByteAt(0xC0E2, 0x80)
+	// 0xC0E3 LDX #$00
+	e.Memory.WriteByteAt(0xC0E3, 0xA2)
+	e.Memory.WriteByteAt(0xC0E4, 0x00)
+	// 0x8000 LDA #$0F
+	e.Memory.WriteByteAt(0x8000, 0xA9)
+	e.Memory.WriteByteAt(0x8001, 0x0F)
+	// 0x8002 STA #$1015
+	e.Memory.WriteByteAt(0x8002, 0x8D)
+	e.Memory.WriteByteAt(0x8003, 0x15)
+	e.Memory.WriteByteAt(0x8004, 0x10)
+	// 0x8005 RTS
+	e.Memory.WriteByteAt(0x8005, 0x60)
+
+	// Jsr
+	e.Step()
+	assert.Equal(t, uint16(0x8000), e.Cpu.Registers.PC)
+
+	// LDA
+	e.Step()
+	assert.Equal(t, byte(0x0F), e.Cpu.Registers.A)
+
+	// STA
+	e.Step()
+	assert.Equal(t, byte(0x0F), e.Memory.ReadByteAt(0x1015))
+
+	// RTS
+	e.Step()
+	assert.Equal(t, uint16(0xC0E3), e.Cpu.Registers.PC)
 }

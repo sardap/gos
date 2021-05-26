@@ -27,8 +27,8 @@ type FlagRegister struct {
 	*ByteRegister
 }
 
-func CreateFlagRegister(value byte) *ByteRegister {
-	return &ByteRegister{val: value}
+func CreateFlagRegister(value byte) *FlagRegister {
+	return &FlagRegister{&ByteRegister{val: value}}
 }
 
 type Flag byte
@@ -76,6 +76,6 @@ func CreateRegisters() *Registers {
 		Y:  StartingY,
 		PC: StartingPC,
 		SP: StartingSP,
-		P:  &FlagRegister{ByteRegister: &ByteRegister{val: StartingP}},
+		P:  CreateFlagRegister(StartingP),
 	}
 }

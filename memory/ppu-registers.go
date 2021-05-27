@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	nesmath "github.com/sardap/gos/math"
+	"github.com/sardap/gos/ppu"
 )
 
 type PpuFlag byte
@@ -53,6 +54,16 @@ type PpuCtrl struct {
 	PpuRegister
 }
 
+func (p *PpuCtrl) VramIncrement() byte {
+	if nesmath.BitSet(p.val, 2) {
+		// Down
+		return 32
+	}
+
+	// Across
+	return 1
+}
+
 func (p *PpuCtrl) NameTableAddress() byte {
 	flag := byte(0)
 	flag = nesmath.SetBit(flag, 0, nesmath.BitSet(p.val, 0))
@@ -77,8 +88,8 @@ type PpuRegisters struct {
 	Address    *PpuRegister // 0x2006
 	Data       *PpuRegister // 0x2007
 
-	pendingWrites []PpuWrite
-	addressLatch  byte
+	Ppu          *ppu.Ppu
+	addressLatch byte
 }
 
 func CreatePpuRegisters() *PpuRegisters {
@@ -92,14 +103,6 @@ func CreatePpuRegisters() *PpuRegisters {
 		Address:    &PpuRegister{},
 		Data:       &PpuRegister{},
 	}
-}
-
-func (p *PpuRegisters) GetPendingWrites() []PpuWrite {
-	return p.pendingWrites
-}
-
-func (p *PpuRegisters) ClearPendingWrites() {
-	p.pendingWrites = nil
 }
 
 func (p *PpuRegisters) WriteByteAt(address uint16, value byte) {
@@ -120,10 +123,8 @@ func (p *PpuRegisters) WriteByteAt(address uint16, value byte) {
 	case 0x2007:
 		address := binary.LittleEndian.Uint16([]byte{p.addressLatch, p.Address.Read()})
 		p.Data.Write(value)
-		p.pendingWrites = append(p.pendingWrites, PpuWrite{
-			Address: address,
-			Value:   value,
-		})
+		p.Ppu.WriteByteAt(address, value)
+		p.Address.Write(p.Address.Read() + p.Ctrl.VramIncrement())
 	default:
 		panic(errors.Wrapf(ErrInvalidAddress, "0x%04X", address))
 	}
@@ -136,7 +137,10 @@ func (p *PpuRegisters) ReadByteAt(address uint16) byte {
 	case 0x2004:
 		return p.OamData.Read()
 	case 0x2007:
-		return p.Data.Read()
+		address := binary.LittleEndian.Uint16([]byte{p.addressLatch, p.Address.Read()})
+		result := p.Ppu.ReadByteAt(address)
+		p.Address.Write(p.Address.Read() + p.Ctrl.VramIncrement())
+		return result
 	default:
 		panic(errors.Wrapf(ErrInvalidAddress, "0x%04X", address))
 	}

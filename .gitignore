@@ -1,3 +1,5 @@
 test_roms/
 nestest/
 bin/
+.env
+__debug_bin

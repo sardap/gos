@@ -25,7 +25,7 @@ var (
 	nesTestRomPath      = filepath.Join(nesTestPath, "nestest.nes")
 	nesTestValidLogPath = filepath.Join(nesTestPath, "nestest-valid.txt")
 	testRomMutex        = &sync.Mutex{}
-	numRegex            = regexp.MustCompile("[^0-9]+")
+	numRegex            = regexp.MustCompile("[ ,a-zA-Z]")
 )
 
 func init() {
@@ -97,7 +97,7 @@ func download(path, url string) error {
 	return err
 }
 
-type nesTestLine struct {
+type status struct {
 	PC       uint16
 	Opcode   byte
 	A        byte
@@ -110,15 +110,15 @@ type nesTestLine struct {
 	Cyc      int64
 }
 
-func (n nesTestLine) String() string {
+func (n status) String() string {
 	return fmt.Sprintf(
 		"PC:%04X Opcode:%02X A:%02X X:%02X Y:%02X P:%02X SP:%02X Cyc:%d",
 		n.PC, n.Opcode, n.A, n.X, n.Y, n.P, n.SP, n.Cyc,
 	)
 }
 
-func parseNesTestLine(line string) nesTestLine {
-	result := nesTestLine{}
+func parseNesTestLine(line string) status {
+	result := status{}
 
 	r := bufio.NewReader(bytes.NewBufferString(line))
 
@@ -191,8 +191,8 @@ func parseNesTestLine(line string) nesTestLine {
 	return result
 }
 
-func emulatorToTestLine(e *emulator.Emulator, cycles int64) nesTestLine {
-	return nesTestLine{
+func emulatorToTestLine(e *emulator.Emulator, cycles int64) status {
+	return status{
 		PC:     e.Cpu.Registers.PC,
 		Opcode: e.Memory.ReadByteAt(e.Cpu.Registers.PC),
 		A:      e.Cpu.Registers.A,
@@ -238,23 +238,26 @@ func TestNestestRom(t *testing.T) {
 	lineNum := 1
 	for scanner.Scan() && !t.Failed() {
 		line := scanner.Text()
-		nesTestLine := parseNesTestLine(string(line))
-		nesTestEmulator := emulatorToTestLine(e, cycles)
+		statusValid := parseNesTestLine(string(line))
+		statusEmu := emulatorToTestLine(e, cycles)
 
-		fmt.Printf("line %04d Valid %s\n", lineNum, nesTestLine)
-		fmt.Printf("line %04d Mine  %s\n", lineNum, nesTestEmulator)
+		fmt.Printf("line %04d Valid %s\n", lineNum, statusValid)
+		fmt.Printf("line %04d Mine  %s\n", lineNum, statusEmu)
 
-		opcode := nesTestEmulator.Opcode
+		opcode := statusEmu.Opcode
 		// Program Counters
-		assert.Equalf(t, nesTestLine.Opcode, opcode, "Line:%d Opcode:%02X Opcode", lineNum, opcode)
-		assert.Equalf(t, nesTestLine.PC, nesTestEmulator.PC, "Line:%d Opcode:%02X Program Counter", lineNum, opcode)
-		assert.Equalf(t, nesTestLine.Cyc, cycles, "Line:%d Opcode:%02X Cycles", lineNum, opcode)
+		assert.Equalf(t, statusValid.Opcode, opcode, "Line:%d Opcode:%02X Opcode", lineNum, opcode)
+		assert.Equalf(t, statusValid.PC, statusEmu.PC, "Line:%d Opcode:%02X Program Counter", lineNum, opcode)
+		assert.Equalf(t, statusValid.Cyc, cycles, "Line:%d Opcode:%02X Cycles", lineNum, opcode)
 		// Regsiters
-		assert.Equalf(t, nesTestLine.A, nesTestEmulator.A, "Line:%d Opcode:%02X A", lineNum, opcode)
-		assert.Equalf(t, nesTestLine.X, nesTestEmulator.X, "Line:%d Opcode:%02X X", lineNum, opcode)
-		assert.Equalf(t, nesTestLine.Y, nesTestEmulator.Y, "Line:%d Opcode:%02X Y", lineNum, opcode)
-		assert.Equalf(t, nesTestLine.P, nesTestEmulator.P, "Line:%d Opcode:%02X P", lineNum, opcode)
-		assertFlags(t, nesTestLine.P, nesTestEmulator.P)
+		assert.Equalf(t, statusValid.A, statusEmu.A, "Line:%d Opcode:%02X A", lineNum, opcode)
+		assert.Equalf(t, statusValid.X, statusEmu.X, "Line:%d Opcode:%02X X", lineNum, opcode)
+		assert.Equalf(t, statusValid.Y, statusEmu.Y, "Line:%d Opcode:%02X Y", lineNum, opcode)
+		assert.Equalf(t, statusValid.P, statusEmu.P, "Line:%d Opcode:%02X P", lineNum, opcode)
+		assertFlags(t, statusValid.P, statusEmu.P)
+		// PPU
+		assert.Equalf(t, statusValid.PpuLeft, statusEmu.PpuLeft, "Line:%d Opcode:%02X Ppu Left", lineNum, opcode)
+		assert.Equalf(t, statusValid.PpuRight, statusEmu.PpuRight, "Line:%d Opcode:%02X Ppu Rightt", lineNum, opcode)
 
 		e.Step()
 		cycles += int64(e.Cpu.Cycles)

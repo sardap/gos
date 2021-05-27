@@ -2,8 +2,6 @@ package ppu
 
 import (
 	"fmt"
-
-	"github.com/sardap/gos/memory"
 )
 
 var (
@@ -24,9 +22,9 @@ func Create() *Ppu {
 	return &Ppu{}
 }
 
-func (p *Ppu) Step(pendingWrites []memory.PpuWrite) {
-	for _, write := range pendingWrites {
-		p.WriteByteAt(write.Address, write.Value)
+func (p *Ppu) Step(cycles int) {
+	for i := 0; i < cycles*3; i++ {
+
 	}
 }
 
@@ -59,7 +57,7 @@ func (p *Ppu) WriteByteAt(address uint16, value byte) {
 			p.WriteByteAt(address-0x0020, value)
 		}
 	default:
-		panic(ErrInvalidAddress)
+		p.WriteByteAt(address-0x3FFF, value)
 	}
 }
 
@@ -93,5 +91,5 @@ func (p *Ppu) ReadByteAt(address uint16) byte {
 		}
 	}
 
-	panic(ErrInvalidAddress)
+	return p.ReadByteAt(address - 0x3FFF)
 }

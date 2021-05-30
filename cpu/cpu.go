@@ -6,33 +6,41 @@ import (
 	"log"
 	"strings"
 
+	"github.com/sardap/gos/bus"
 	nesmath "github.com/sardap/gos/math"
 	"github.com/sardap/gos/memory"
-	"github.com/sardap/gos/ppu"
+)
+
+const (
+	stackOffset = 0x0100
+	irqOffset   = 0xFFFE
+	nimOffset   = 0xFFFa
 )
 
 type Cpu struct {
 	Registers   *Registers
 	Memory      *memory.Memory
-	Ppu         *ppu.Ppu
 	Cycles      int
 	ExtraCycles byte
 	// http://nesdev.com/the%20%27B%27%20flag%20&%20BRK%20instruction.txt
 	Interupt bool
+	bus      *bus.Bus
 }
 
-func CreateCpu(mem *memory.Memory, ppu *ppu.Ppu) *Cpu {
-	return &Cpu{
+func CreateCpu(mem *memory.Memory, b *bus.Bus) *Cpu {
+	result := &Cpu{
 		Registers: CreateRegisters(),
 		Memory:    mem,
-		Ppu:       ppu,
+		bus:       b,
 		Cycles:    0,
 		Interupt:  true,
 	}
+	b.Cpu = result
+	return result
 }
 
 func (c *Cpu) PushByte(value byte) {
-	c.Memory.WriteByteAt(memory.StackOffset+uint16(c.Registers.SP), value)
+	c.Memory.WriteByteAt(stackOffset+uint16(c.Registers.SP), value)
 	c.Registers.SP--
 }
 
@@ -46,7 +54,7 @@ func (c *Cpu) PushP() {
 
 func (c *Cpu) PopByte() byte {
 	c.Registers.SP++
-	result := c.Memory.ReadByteAt(memory.StackOffset + uint16(c.Registers.SP))
+	result := c.Memory.ReadByteAt(stackOffset + uint16(c.Registers.SP))
 	return result
 }
 
@@ -126,10 +134,18 @@ func (c *Cpu) Excute() {
 	operation.Inst(c, operation.AddressMode)
 
 	c.Registers.PC += operation.Length
+
 	c.Cycles += operation.MinCycles
 	if operation.CanHaveExtraCycles {
 		c.Cycles += int(c.ExtraCycles)
 	}
+	if c.Memory.DmaTransfer {
+		c.Memory.DmaTransfer = false
+		// This might lead to issues down the road
+		// https://wiki.nesdev.com/w/index.php/PPU_registers#OAMDMA
+		c.Cycles += 513
+	}
+
 	c.ExtraCycles = 0
 }
 
@@ -225,5 +241,23 @@ func (c *Cpu) WriteByteByMode(mode AddressMode, value byte) {
 	default:
 		address := c.GetOprandAddress(mode)
 		c.Memory.WriteByteAt(address, value)
+	}
+}
+
+func (c *Cpu) Interrupt(interrupt bus.InterruptType) {
+	c.Interupt = true
+
+	if interrupt == bus.InterruptTypeBreak {
+		c.Registers.PC++
+	}
+
+	c.PushUint16(c.Registers.PC + 2)
+	c.PushP()
+
+	switch interrupt {
+	case bus.InterruptTypeBreak:
+		c.Registers.PC = c.Memory.ReadUint16At(irqOffset)
+	case bus.InterruptTypeNim:
+		c.Registers.PC = c.Memory.ReadUint16At(nimOffset)
 	}
 }

@@ -56,18 +56,13 @@ func parseArgs() (*args, error) {
 }
 
 func main() {
-	e := emulator.Create()
-
-	func() {
-		f, err := os.Open("assets\\test_roms\\nestest.nes")
-		if err != nil {
-			panic(err)
-		}
-		defer f.Close()
-		if err := e.LoadRom(f); err != nil {
-			panic(err)
-		}
-	}()
+	os.Remove("gos.log")
+	f, err := os.OpenFile("gos.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
 
 	ebiten.SetWindowSize(WindowWidth, WindowHeight)
 	ebiten.SetWindowTitle("Go Boy")

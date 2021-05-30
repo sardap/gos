@@ -3,6 +3,7 @@ package emulator
 import (
 	"io"
 
+	"github.com/sardap/gos/bus"
 	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/memory"
 	"github.com/sardap/gos/ppu"
@@ -12,13 +13,15 @@ type Emulator struct {
 	Memory *memory.Memory
 	Ppu    *ppu.Ppu
 	Cpu    *cpu.Cpu
+	bus    *bus.Bus
 }
 
 func Create() *Emulator {
 	result := &Emulator{}
-	result.Memory = memory.Create()
-	result.Ppu = ppu.Create()
-	result.Cpu = cpu.CreateCpu(result.Memory, result.Ppu)
+	result.bus = &bus.Bus{}
+	result.Memory = memory.Create(result.bus)
+	result.Ppu = ppu.Create(result.bus)
+	result.Cpu = cpu.CreateCpu(result.Memory, result.bus)
 
 	return result
 }

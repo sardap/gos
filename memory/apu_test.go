@@ -1,16 +1,16 @@
-package apu_test
+package memory_test
 
 import (
 	"testing"
 
-	"github.com/sardap/gos/apu"
+	"github.com/sardap/gos/memory"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestApuReadWrites(t *testing.T) {
 	t.Parallel()
 
-	a := apu.Create()
+	a := memory.CreateApu()
 
 	for i := uint16(0x4000); i <= 0x4017; i++ {
 		// 0x4014 is just missing

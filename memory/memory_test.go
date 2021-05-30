@@ -3,12 +3,19 @@ package memory_test
 import (
 	"testing"
 
+	"github.com/sardap/gos/bus"
 	"github.com/sardap/gos/memory"
+	"github.com/sardap/gos/ppu"
 	"github.com/stretchr/testify/assert"
 )
 
 func createMemory() *memory.Memory {
-	return memory.Create()
+	b := &bus.Bus{}
+
+	result := memory.Create(b)
+	ppu.Create(b)
+
+	return result
 }
 
 func TestRamMirroing(t *testing.T) {

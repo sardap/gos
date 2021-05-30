@@ -3,3 +3,4 @@ nestest/
 bin/
 .env
 __debug_bin
+gos.log

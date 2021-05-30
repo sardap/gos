@@ -3,6 +3,7 @@ package cpu
 import (
 	"fmt"
 
+	"github.com/sardap/gos/bus"
 	nesmath "github.com/sardap/gos/math"
 )
 
@@ -114,7 +115,7 @@ func init() {
 		// Branch on Result Plus
 		0x10: {Inst: Bpl, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BPL oper"},
 		// interrupt; push PC+2; push SR
-		0x00: {Inst: Brk, Length: 1, MinCycles: 7, CanHaveExtraCycles: true, AddressMode: AddressModeImplied, Name: "BRK"},
+		0x00: {Inst: Brk, Length: 0, MinCycles: 7, AddressMode: AddressModeImplied, Name: "BRK"},
 		// Branch on Overflow Clear
 		0x50: {Inst: Bvc, Length: 2, MinCycles: 2, CanHaveExtraCycles: true, AddressMode: AddressModeRelative, Name: "BVC oper"},
 		// Branch on Overflow Set
@@ -487,9 +488,7 @@ func Bpl(c *Cpu, mode AddressMode) {
 }
 
 func Brk(c *Cpu, mode AddressMode) {
-	c.PushUint16(c.Registers.PC + 2)
-	c.PushP()
-	c.Interupt = true
+	c.Interrupt(bus.InterruptTypeBreak)
 }
 
 func Bvc(c *Cpu, mode AddressMode) {

@@ -1,12 +1,4 @@
-package apu
-
-import (
-	"fmt"
-)
-
-var (
-	ErrInvalidAddress = fmt.Errorf("invalid apu address")
-)
+package memory
 
 type SoundRegister struct {
 	data [4]byte
@@ -46,7 +38,7 @@ type Apu struct {
 	FrameCounter  byte      // 0x4017
 }
 
-func Create() *Apu {
+func CreateApu() *Apu {
 	return &Apu{
 		Pluse1:   &Pluse{},
 		Pluse2:   &Pluse{},

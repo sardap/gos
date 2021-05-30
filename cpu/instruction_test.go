@@ -6,9 +6,9 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/sardap/gos/bus"
 	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/memory"
-	"github.com/sardap/gos/ppu"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +33,8 @@ func (c *testCart) ReadByteAt(address uint16) byte {
 }
 
 func createCpu() *cpu.Cpu {
-	result := cpu.CreateCpu(memory.Create(), ppu.Create())
+	b := &bus.Bus{}
+	result := cpu.CreateCpu(memory.Create(b), b)
 	result.Memory.SetCart(&testCart{})
 	return result
 }

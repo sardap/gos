@@ -1,5 +1,7 @@
 package math
 
+import "encoding/binary"
+
 func SetBit(n byte, pos byte, value bool) byte {
 	if value {
 		n |= (1 << pos)
@@ -30,4 +32,8 @@ func WrapUint16(val, max uint16) uint16 {
 	}
 
 	return val
+}
+
+func CombineToUint16(lower, higher byte) uint16 {
+	return binary.LittleEndian.Uint16([]byte{lower, higher})
 }

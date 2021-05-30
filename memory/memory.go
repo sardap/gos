@@ -6,11 +6,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sardap/gos/apu"
-)
-
-const (
-	StackOffset = 0x0100
+	"github.com/sardap/gos/bus"
+	nesmath "github.com/sardap/gos/math"
 )
 
 var (
@@ -22,14 +19,19 @@ type Memory struct {
 	iRam         [0x0800]byte
 	cart         Cart
 	PpuRegisters *PpuRegisters
-	Apu          *apu.Apu
+	Apu          *Apu
+	DmaTransfer  bool
+	bus          *bus.Bus
 }
 
-func Create() *Memory {
-	return &Memory{
-		PpuRegisters: CreatePpuRegisters(),
-		Apu:          apu.Create(),
+func Create(b *bus.Bus) *Memory {
+	result := &Memory{
+		PpuRegisters: CreatePpuRegisters(b),
+		Apu:          CreateApu(),
+		bus:          b,
 	}
+	b.AddMemory(result)
+	return result
 }
 
 func (m *Memory) SetCart(cart Cart) {
@@ -58,7 +60,17 @@ func (m *Memory) WriteByteAt(address uint16, value byte) {
 		m.PpuRegisters.WriteByteAt(0x2000+address%8, value)
 	//APU and IO
 	case address >= 0x4000 && address <= 0x4017:
-		m.Apu.WriteByteAt(address, value)
+		switch address {
+		// OMA DMA
+		case 0x4014:
+			m.DmaTransfer = true
+			baseReadAddress := nesmath.CombineToUint16(value, 0x00)
+			for i := byte(0x00); i < 0xFF; i++ {
+				m.bus.Ppu.WriteByteToOAM(i, m.ReadByteAt(baseReadAddress+uint16(i)))
+			}
+		default:
+			m.Apu.WriteByteAt(address, value)
+		}
 	//Funky APU and IO
 	case address >= 0x4018 && address <= 0x401F:
 		panic(fmt.Errorf("funky APU and IO not created"))

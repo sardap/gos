@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"image/color"
 	"io"
 	"log"
 	"net/http"
@@ -21,22 +22,6 @@ const (
 	WindowWidth  = 1200
 	WindowHeight = 720
 )
-
-type Gos struct {
-	emu *emulator.Emulator
-}
-
-func (g *Gos) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return WindowWidth, WindowHeight
-}
-
-func (g *Gos) Update() error {
-	g.emu.Step()
-	return nil
-}
-
-func (g *Gos) Draw(screen *ebiten.Image) {
-}
 
 type args struct {
 	romPath string
@@ -67,7 +52,17 @@ func main() {
 	ebiten.SetWindowSize(WindowWidth, WindowHeight)
 	ebiten.SetWindowTitle("Go Boy")
 
-	g := &Gos{}
+	g := &Gos{
+		tileMaps: make(map[uint16]*ebiten.Image),
+		palettes: map[int]map[int]color.Color{
+			0: {
+				0: color.RGBA{0, 0, 0, 0},
+				1: color.RGBA{64, 64, 64, 255},
+				2: color.RGBA{128, 128, 128, 255},
+				3: color.RGBA{255, 255, 255, 255},
+			},
+		},
+	}
 	g.emu = emulator.Create()
 
 	args, err := parseArgs()

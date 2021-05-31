@@ -7,35 +7,16 @@ import (
 	"testing"
 
 	"github.com/sardap/gos/bus"
+	"github.com/sardap/gos/cart"
 	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/memory"
 	"github.com/stretchr/testify/assert"
 )
 
-type testCart struct {
-	data [0x10000]byte
-}
-
-func (c *testCart) WriteBytesPrg(value []byte) error {
-	return nil
-}
-
-func (c *testCart) WriteBytesChr(value []byte) error {
-	return nil
-}
-
-func (c *testCart) WriteByteAt(address uint16, value byte) {
-	c.data[address] = value
-}
-
-func (c *testCart) ReadByteAt(address uint16) byte {
-	return c.data[address]
-}
-
 func createCpu() *cpu.Cpu {
 	b := &bus.Bus{}
 	result := cpu.CreateCpu(memory.Create(b), b)
-	result.Memory.SetCart(&testCart{})
+	b.Cart = &cart.TestCart{}
 	return result
 }
 

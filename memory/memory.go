@@ -1,23 +1,19 @@
 package memory
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
 
 	"github.com/sardap/gos/bus"
 	nesmath "github.com/sardap/gos/math"
 )
 
 var (
-	ErrInvalidRom     = fmt.Errorf("invalid rom header")
 	ErrInvalidAddress = fmt.Errorf("invalid address")
 )
 
 type Memory struct {
 	iRam         [0x0800]byte
-	cart         Cart
 	PpuRegisters *PpuRegisters
 	Apu          *Apu
 	DmaTransfer  bool
@@ -32,10 +28,6 @@ func Create(b *bus.Bus) *Memory {
 	}
 	b.AddMemory(result)
 	return result
-}
-
-func (m *Memory) SetCart(cart Cart) {
-	m.cart = cart
 }
 
 func (m *Memory) WriteByteAt(address uint16, value byte) {
@@ -76,7 +68,7 @@ func (m *Memory) WriteByteAt(address uint16, value byte) {
 		panic(fmt.Errorf("funky APU and IO not created"))
 	//Cart space: PRG, ROM, PRG, RAM and mappers
 	case address >= 0x4020 && address <= 0xFFFF:
-		m.cart.WriteByteAt(address, value)
+		m.bus.Cart.WriteByteAt(address, value)
 	}
 }
 
@@ -113,7 +105,7 @@ func (m *Memory) ReadByteAt(address uint16) byte {
 		panic(fmt.Errorf("funky APU and IO not created"))
 	//Cart space: PRG, ROM, PRG, RAM and mappers
 	case address >= 0x4020 && address <= 0xFFFF:
-		return m.cart.ReadByteAt(address)
+		return m.bus.Cart.ReadByteAt(address)
 	}
 
 	panic(fmt.Errorf("invalid address"))
@@ -122,67 +114,4 @@ func (m *Memory) ReadByteAt(address uint16) byte {
 func (m *Memory) ReadUint16At(address uint16) uint16 {
 	return binary.LittleEndian.Uint16(
 		[]byte{m.ReadByteAt(address), m.ReadByteAt(address + 1)})
-}
-
-type bytesQueue struct {
-	r io.Reader
-}
-
-func (b *bytesQueue) Pop() (byte, error) {
-	buf := make([]byte, 1)
-	_, err := b.r.Read(buf)
-	return buf[0], err
-}
-
-func (b *bytesQueue) PopN(n int64) ([]byte, error) {
-	buf := make([]byte, n)
-	_, err := b.r.Read(buf)
-	return buf, err
-}
-
-func (m *Memory) LoadRom(r io.Reader) error {
-	buffer := bytesQueue{
-		r: r,
-	}
-
-	info := CartInfo{}
-
-	dotNesHeaderPrefix := []byte{0x4E, 0x45, 0x53, 0x1A}
-	if cartPrefix, err := buffer.PopN(4); err != nil || !bytes.Equal(dotNesHeaderPrefix, cartPrefix) {
-		return ErrInvalidRom
-	}
-
-	var err error
-	info.PrgRomBanks, _ = buffer.Pop()
-	info.ChrRomBanks, _ = buffer.Pop()
-	controlByte1, _ := buffer.Pop()
-	info.ControlByte1 = createControlByte1(controlByte1)
-	controlByte2, _ := buffer.Pop()
-	info.ControlByte2, err = createControlByte2(controlByte2)
-	if err != nil {
-		return err
-	}
-	info.PrgRamLength, _ = buffer.Pop()
-
-	m.cart = createCart(info)
-
-	buffer.PopN(7)
-
-	for i := 0; i < int(info.PrgRomBanks); i++ {
-		data, err := buffer.PopN(16384)
-		if err != nil {
-			return ErrInvalidRom
-		}
-		m.cart.WriteBytesPrg(data)
-	}
-
-	for i := 0; i < int(info.ChrRomBanks); i++ {
-		data, err := buffer.PopN(8192)
-		if err != nil {
-			return ErrInvalidRom
-		}
-		m.cart.WriteBytesPrg(data)
-	}
-
-	return nil
 }

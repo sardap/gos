@@ -167,10 +167,6 @@ func (p *Ppu) step() {
 
 func (p *Ppu) WriteByteAt(address uint16, value byte) {
 	switch address & 0xF000 {
-	case 0x0000:
-		p.Mem.PatternTable0[address] = value
-	case 0x1000:
-		p.Mem.PatternTable1[address-0x1000] = value
 	case 0x2000:
 		switch address & 0x0F00 {
 		case 0x0000, 0x0100, 0x0200, 0x0300:
@@ -201,9 +197,9 @@ func (p *Ppu) WriteByteAt(address uint16, value byte) {
 func (p *Ppu) ReadByteAt(address uint16) byte {
 	switch address & 0xF000 {
 	case 0x0000:
-		return p.Mem.PatternTable0[address]
+		return p.bus.Cart.ReadByteChrAt(address)
 	case 0x1000:
-		return p.Mem.PatternTable1[address-0x1000]
+		return p.bus.Cart.ReadByteChrAt(address)
 	case 0x2000:
 		switch address & 0x0F00 {
 		case 0x0000, 0x0100, 0x0200, 0x0300:

@@ -15,6 +15,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/sardap/gos/cart"
 	"github.com/sardap/gos/cpu"
 	"github.com/sardap/gos/emulator"
 	"github.com/stretchr/testify/assert"
@@ -220,6 +221,7 @@ func TestNestestRom(t *testing.T) {
 	t.Parallel()
 
 	e := emulator.Create()
+	e.PpuEnabled = false
 
 	var scanner *bufio.Scanner
 	func() {
@@ -244,6 +246,10 @@ func TestNestestRom(t *testing.T) {
 		fmt.Printf("line %04d Valid %s\n", lineNum, statusValid)
 		fmt.Printf("line %04d Mine  %s\n", lineNum, statusEmu)
 
+		if lineNum == 36 {
+			fmt.Printf("fuck\n")
+		}
+
 		opcode := statusEmu.Opcode
 		// Program Counters
 		assert.Equalf(t, statusValid.Opcode, opcode, "Line:%d Opcode:%02X Opcode", lineNum, opcode)
@@ -256,8 +262,8 @@ func TestNestestRom(t *testing.T) {
 		assert.Equalf(t, statusValid.P, statusEmu.P, "Line:%d Opcode:%02X P", lineNum, opcode)
 		assertFlags(t, statusValid.P, statusEmu.P)
 		// PPU
-		assert.Equalf(t, statusValid.PpuLeft, statusEmu.PpuLeft, "Line:%d Opcode:%02X Ppu Left", lineNum, opcode)
-		assert.Equalf(t, statusValid.PpuRight, statusEmu.PpuRight, "Line:%d Opcode:%02X Ppu Rightt", lineNum, opcode)
+		// assert.Equalf(t, statusValid.PpuLeft, statusEmu.PpuLeft, "Line:%d Opcode:%02X Ppu Left", lineNum, opcode)
+		// assert.Equalf(t, statusValid.PpuRight, statusEmu.PpuRight, "Line:%d Opcode:%02X Ppu Rightt", lineNum, opcode)
 
 		e.Step()
 		cycles += int64(e.Cpu.Cycles)
@@ -266,31 +272,11 @@ func TestNestestRom(t *testing.T) {
 	}
 }
 
-type testCart struct {
-	data [0x10000]byte
-}
-
-func (c *testCart) WriteBytesPrg(value []byte) error {
-	return nil
-}
-
-func (c *testCart) WriteBytesChr(value []byte) error {
-	return nil
-}
-
-func (c *testCart) WriteByteAt(address uint16, value byte) {
-	c.data[address] = value
-}
-
-func (c *testCart) ReadByteAt(address uint16) byte {
-	return c.data[address]
-}
-
 func TestRtsTrick(t *testing.T) {
 	t.Parallel()
 
 	e := emulator.Create()
-	e.Memory.SetCart(&testCart{})
+	e.Bus.Cart = &cart.TestCart{}
 	e.Cpu.Registers.PC = 0xC0E0
 
 	// 0xC0E0 JSR $8000

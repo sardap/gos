@@ -1,7 +1,13 @@
-package memory
+package cart
 
 import (
+	"fmt"
+
 	nesmath "github.com/sardap/gos/math"
+)
+
+var (
+	ErrInvalidRom = fmt.Errorf("invalid rom header")
 )
 
 type MirrorType int
@@ -19,7 +25,7 @@ type ControlByte1 struct {
 	MirrorType           MirrorType
 }
 
-func createControlByte1(data byte) *ControlByte1 {
+func CreateControlByte1(data byte) *ControlByte1 {
 	result := &ControlByte1{}
 
 	mapperLower := byte(0)
@@ -54,7 +60,7 @@ type ControlByte2 struct {
 	INesFormat       INesFormatType
 }
 
-func createControlByte2(data byte) (*ControlByte2, error) {
+func CreateControlByte2(data byte) (*ControlByte2, error) {
 	result := &ControlByte2{}
 
 	mapperHigher := byte(0)
@@ -85,9 +91,34 @@ type CartInfo struct {
 
 type Cart interface {
 	WriteBytesPrg(value []byte) error
+	ReadByteChrAt(address uint16) byte
 	WriteBytesChr(value []byte) error
 	WriteByteAt(address uint16, value byte)
 	ReadByteAt(address uint16) byte
+}
+
+type TestCart struct {
+	data [0x10000]byte
+}
+
+func (c *TestCart) WriteBytesPrg(value []byte) error {
+	return nil
+}
+
+func (c *TestCart) ReadByteChrAt(offset uint16) byte {
+	return c.data[offset]
+}
+
+func (c *TestCart) WriteBytesChr(value []byte) error {
+	return nil
+}
+
+func (c *TestCart) WriteByteAt(address uint16, value byte) {
+	c.data[address] = value
+}
+
+func (c *TestCart) ReadByteAt(address uint16) byte {
+	return c.data[address]
 }
 
 type NRom struct {
@@ -97,13 +128,17 @@ type NRom struct {
 	mirroring MirrorType
 }
 
-func createCart(info CartInfo) *NRom {
+func CreateCart(info CartInfo) *NRom {
 	result := &NRom{}
 
 	result.mirroring = info.ControlByte1.MirrorType
 	result.mapper = info.ControlByte2.MapperHigherBits | info.ControlByte1.MapperLowerBits
 
 	return result
+}
+
+func (c *NRom) ReadByteChrAt(offset uint16) byte {
+	return c.Chr[offset]
 }
 
 func (c *NRom) WriteBytesPrg(value []byte) error {

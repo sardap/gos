@@ -13,26 +13,31 @@ type Emulator struct {
 	Memory *memory.Memory
 	Ppu    *ppu.Ppu
 	Cpu    *cpu.Cpu
-	bus    *bus.Bus
+	Bus    *bus.Bus
+
+	PpuEnabled bool
 }
 
 func Create() *Emulator {
 	result := &Emulator{}
-	result.bus = &bus.Bus{}
-	result.Memory = memory.Create(result.bus)
-	result.Ppu = ppu.Create(result.bus)
-	result.Cpu = cpu.CreateCpu(result.Memory, result.bus)
+	result.Bus = &bus.Bus{}
+	result.Memory = memory.Create(result.Bus)
+	result.Ppu = ppu.Create(result.Bus)
+	result.Cpu = cpu.CreateCpu(result.Memory, result.Bus)
+	result.PpuEnabled = true
 
 	return result
 }
 
 func (e *Emulator) LoadRom(r io.Reader) error {
-	return e.Memory.LoadRom(r)
+	return e.Bus.LoadRom(r)
 }
 
 func (e *Emulator) Step() {
 	e.Cpu.Cycles = 0
 	e.Cpu.Excute()
 
-	e.Ppu.Step(e.Cpu.Cycles)
+	if e.PpuEnabled {
+		e.Ppu.Step(e.Cpu.Cycles)
+	}
 }

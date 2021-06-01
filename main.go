@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"fmt"
-	"image/color"
 	"io"
 	"log"
 	"net/http"
@@ -53,15 +52,8 @@ func main() {
 	ebiten.SetWindowTitle("Go Boy")
 
 	g := &Gos{
-		tileMaps: make(map[uint16]*ebiten.Image),
-		palettes: map[int]map[int]color.Color{
-			0: {
-				0: color.RGBA{0, 0, 0, 0},
-				1: color.RGBA{64, 64, 64, 255},
-				2: color.RGBA{128, 128, 128, 255},
-				3: color.RGBA{255, 255, 255, 255},
-			},
-		},
+		tileMaps:    make(map[uint16]*ebiten.Image),
+		paletteImgs: make(map[uint16]*ebiten.Image),
 	}
 	g.emu = emulator.Create()
 

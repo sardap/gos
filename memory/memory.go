@@ -56,9 +56,10 @@ func (m *Memory) WriteByteAt(address uint16, value byte) {
 		// OMA DMA
 		case 0x4014:
 			m.DmaTransfer = true
-			baseReadAddress := nesmath.CombineToUint16(value, 0x00)
+			baseReadAddress := nesmath.CombineToUint16(0x00, value)
 			for i := byte(0x00); i < 0xFF; i++ {
-				m.bus.Ppu.WriteByteToOAM(i, m.ReadByteAt(baseReadAddress+uint16(i)))
+				value := m.ReadByteAt(baseReadAddress + uint16(i))
+				m.bus.Ppu.WriteByteToOAM(i, value)
 			}
 		default:
 			m.Apu.WriteByteAt(address, value)

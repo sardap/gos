@@ -2,16 +2,40 @@ package main
 
 import (
 	"image/color"
+	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/sardap/gos/emulator"
 	nesmath "github.com/sardap/gos/math"
+	"github.com/sardap/gos/palette"
 )
 
+var (
+	completePalette *palette.Palette
+	blankPallete    = map[int]color.Color{
+		0: color.RGBA{0, 0, 0, 0},
+		1: color.RGBA{64, 64, 64, 255},
+		2: color.RGBA{128, 128, 128, 255},
+		3: color.RGBA{255, 255, 255, 255},
+	}
+)
+
+func init() {
+	f, err := os.Open("assets/palettes/ntscpalette.pal")
+	if err != nil {
+		panic(err)
+	}
+
+	completePalette, err = palette.Parse(f)
+	if err != nil {
+		panic(err)
+	}
+}
+
 type Gos struct {
-	emu      *emulator.Emulator
-	tileMaps map[uint16]*ebiten.Image
-	palettes map[int]map[int]color.Color
+	emu         *emulator.Emulator
+	tileMaps    map[uint16]*ebiten.Image
+	paletteImgs map[uint16]*ebiten.Image
 }
 
 func (g *Gos) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -25,17 +49,37 @@ func (g *Gos) Update() error {
 
 func (g *Gos) Draw(screen *ebiten.Image) {
 
-	options := &ebiten.DrawImageOptions{}
-	options.GeoM.Scale(2, 2)
-	options.GeoM.Translate(float64(0), float64(0))
-	img := g.RenderPatternTable(0x0000)
+	var options *ebiten.DrawImageOptions
+	var img *ebiten.Image
+	var x int
+
+	// pallettes
+	if g.emu.Ppu.PaletteDirty() {
+		g.paletteImgs = make(map[uint16]*ebiten.Image)
+	}
+	options = &ebiten.DrawImageOptions{}
+	options.GeoM.Scale(32, 32)
+	options.GeoM.Translate(float64(x), float64(0))
+	img = g.RenderPalette(0x3F01)
 	screen.DrawImage(img, options)
+	x += img.Bounds().Max.X
+
+	x = 700
+
+	// tiles
+	options = &ebiten.DrawImageOptions{}
+	options.GeoM.Scale(2, 2)
+	options.GeoM.Translate(float64(x), float64(0))
+	img = g.RenderPatternTable(0x0000)
+	screen.DrawImage(img, options)
+	x += img.Bounds().Max.X
 
 	options = &ebiten.DrawImageOptions{}
 	options.GeoM.Scale(2, 2)
-	options.GeoM.Translate(float64(img.Bounds().Max.X+100), float64(0))
+	options.GeoM.Translate(float64(x+100), float64(0))
 	img = g.RenderPatternTable(0x1000)
 	screen.DrawImage(img, options)
+	x += img.Bounds().Max.X
 }
 
 func (g *Gos) Color(palNumber int, num int) color.Color {
@@ -43,7 +87,23 @@ func (g *Gos) Color(palNumber int, num int) color.Color {
 		panic("invalid number")
 	}
 
-	return g.palettes[palNumber][num]
+	return blankPallete[num]
+}
+
+func (g *Gos) RenderPalette(baseAddress uint16) *ebiten.Image {
+	if g.paletteImgs[baseAddress] != nil {
+		return g.paletteImgs[baseAddress]
+	}
+
+	palImg := ebiten.NewImage(4, 1)
+	palImg.Set(0, 0, completePalette.ColorForInt(int(g.emu.Ppu.ReadByteAt(0x3F00))))
+	for i := uint16(1); i < 4; i++ {
+		value := g.emu.Ppu.ReadByteAt(baseAddress + i)
+		palImg.Set(int(i), 0, completePalette.ColorForInt(int(value)))
+	}
+
+	g.paletteImgs[baseAddress] = palImg
+	return g.paletteImgs[baseAddress]
 }
 
 func (g *Gos) RenderPatternTable(baseAddress uint16) *ebiten.Image {
@@ -60,8 +120,8 @@ func (g *Gos) RenderPatternTable(baseAddress uint16) *ebiten.Image {
 
 		for j := uint16(0); j < 8; j++ {
 			address := baseAddress + i + j
-			left := g.emu.Bus.Ppu.ReadByteAt(address)
-			right := g.emu.Bus.Ppu.ReadByteAt(address + 8)
+			left := g.emu.Ppu.ReadByteAt(address)
+			right := g.emu.Ppu.ReadByteAt(address + 8)
 			for k := byte(0); k < 8; k++ {
 				var value byte
 				value = nesmath.SetBit(value, 0, nesmath.BitSet(left, k))

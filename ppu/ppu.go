@@ -83,7 +83,9 @@ type Ppu struct {
 	controller *Register
 	status     *Register
 	mask       *Register
+	oam        [256]byte
 
+	paletteDirty    bool
 	bus             *bus.Bus
 	state           state
 	vblankCountdown int
@@ -104,8 +106,14 @@ func Create(b *bus.Bus) *Ppu {
 	return result
 }
 
+func (p *Ppu) PaletteDirty() bool {
+	result := p.paletteDirty
+	p.paletteDirty = false
+	return result
+}
+
 func (p *Ppu) WriteByteToOAM(offset byte, val byte) {
-	p.WriteByteAt(0x0200+uint16(offset), val)
+	p.oam[offset] = val
 }
 
 func (p *Ppu) GetStatus() byte {
@@ -184,6 +192,7 @@ func (p *Ppu) WriteByteAt(address uint16, value byte) {
 		case address >= 0x3000 && address <= 0x3EFF:
 			p.WriteByteAt(address-0x1000, value)
 		case address >= 0x3F00 && address <= 0x3F1F:
+			p.paletteDirty = true
 			p.Mem.PalRam[address-0x3F00] = value
 		// Mirror of 0x3F00 - 0x3F1F
 		case address >= 0x3F20 && address <= 0x3FFF:

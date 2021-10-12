@@ -1,6 +1,6 @@
 package cpu
 
-import nesmath "github.com/sardap/gos/math"
+import "github.com/sardap/gos/pkg/utility"
 
 const (
 	StartingA  = 0
@@ -45,11 +45,11 @@ const (
 )
 
 func (f *FlagRegister) SetFlag(flag Flag, value bool) {
-	f.val = nesmath.SetBit(f.val, byte(flag), value)
+	f.val = utility.SetBit(f.val, byte(flag), value)
 }
 
 func (f *FlagRegister) ReadFlag(flag Flag) bool {
-	return nesmath.BitSet(f.val, byte(flag))
+	return utility.BitSet(f.val, byte(flag))
 }
 
 func (f *FlagRegister) ReadFlagByte(flag Flag) byte {

@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"github.com/namsral/flag"
+	"github.com/sardap/gos/pkg/emulator"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/sardap/gos/emulator"
 )
 
 const (

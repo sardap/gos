@@ -3,8 +3,8 @@ package ppu
 import (
 	"fmt"
 
-	"github.com/sardap/gos/bus"
-	nesmath "github.com/sardap/gos/math"
+	"github.com/sardap/gos/pkg/bus"
+	"github.com/sardap/gos/pkg/utility"
 )
 
 const (
@@ -53,11 +53,11 @@ func (p *Register) Read() byte {
 }
 
 func (p *Register) FlagSet(flag PpuFlag) bool {
-	return nesmath.BitSet(p.Read(), byte(flag))
+	return utility.BitSet(p.Read(), byte(flag))
 }
 
 func (p *Register) SetFlag(flag PpuFlag, value bool) {
-	p.Write(nesmath.SetBit(p.Read(), byte(flag), value))
+	p.Write(utility.SetBit(p.Read(), byte(flag), value))
 }
 
 type Memory struct {

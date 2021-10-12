@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/sardap/gos/cpu"
+	"github.com/sardap/gos/pkg/cpu"
 )
 
 type operation struct {

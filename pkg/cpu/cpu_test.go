@@ -3,7 +3,7 @@ package cpu_test
 import (
 	"testing"
 
-	"github.com/sardap/gos/cpu"
+	"github.com/sardap/gos/pkg/cpu"
 	"github.com/stretchr/testify/assert"
 )
 

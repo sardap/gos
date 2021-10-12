@@ -3,7 +3,7 @@ package memory_test
 import (
 	"testing"
 
-	"github.com/sardap/gos/memory"
+	"github.com/sardap/gos/pkg/memory"
 	"github.com/stretchr/testify/assert"
 )
 

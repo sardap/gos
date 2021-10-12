@@ -1,6 +1,7 @@
 package emulator_test
 
 import (
+	"archive/zip"
 	"bufio"
 	"bytes"
 	"fmt"
@@ -15,16 +16,17 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/sardap/gos/cart"
-	"github.com/sardap/gos/cpu"
-	"github.com/sardap/gos/emulator"
+	"github.com/sardap/gos/pkg/cart"
+	"github.com/sardap/gos/pkg/cpu"
+	"github.com/sardap/gos/pkg/emulator"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	nesTestPath         = "nestest"
+	nesTestPath         = "test_roms"
 	nesTestRomPath      = filepath.Join(nesTestPath, "nestest.nes")
 	nesTestValidLogPath = filepath.Join(nesTestPath, "nestest-valid.txt")
+	oamReadPath         = filepath.Join(nesTestPath, "oam_read.nes")
 	testRomMutex        = &sync.Mutex{}
 	numRegex            = regexp.MustCompile("[ ,a-zA-Z]")
 )
@@ -32,6 +34,7 @@ var (
 func init() {
 	log.SetOutput(ioutil.Discard)
 
+	// Download nestest
 	_, err := os.Stat(nesTestPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -72,6 +75,69 @@ func init() {
 			panic(err)
 		}
 	}
+
+	_, err = os.Stat(oamReadPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = downloadAndExtract(
+				oamReadPath,
+				"http://blargg.8bitalley.com/parodius/nes-tests/oam_read.zip",
+				"oam_read/oam_read.nes",
+			)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
+	}
+}
+
+func downloadAndExtract(path, url, extractPath string) error {
+	var zipFile bytes.Buffer
+
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return err
+	}
+
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+
+	io.Copy(&zipFile, res.Body)
+
+	reader := bytes.NewReader(zipFile.Bytes())
+	zipR, err := zip.NewReader(reader, reader.Size())
+	if err != nil {
+		fmt.Printf("invalid zip given\n")
+		os.Exit(1)
+	}
+
+	var rc io.ReadCloser
+
+	for _, file := range zipR.File {
+		if file.Name != extractPath {
+			continue
+		}
+
+		rc, _ = file.Open()
+		defer rc.Close()
+		break
+	}
+
+	target, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer target.Close()
+
+	io.Copy(target, rc)
+
+	return err
 }
 
 func download(path, url string) error {
@@ -269,6 +335,27 @@ func TestNestestRom(t *testing.T) {
 		cycles += int64(e.Cpu.Cycles)
 
 		lineNum++
+	}
+}
+
+func TestOamRead(t *testing.T) {
+	log.SetOutput(os.Stdout)
+
+	t.Parallel()
+
+	e := emulator.Create()
+	e.PpuEnabled = false
+
+	func() {
+		testRomMutex.Lock()
+		defer testRomMutex.Unlock()
+		// Test loading rom
+		romBytes, _ := os.ReadFile(oamReadPath)
+		e.LoadRom(bytes.NewBuffer(romBytes))
+	}()
+
+	for {
+		e.Step()
 	}
 }
 

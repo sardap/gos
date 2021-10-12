@@ -3,7 +3,7 @@ package ppu_test
 import (
 	"testing"
 
-	"github.com/sardap/gos/ppu"
+	"github.com/sardap/gos/pkg/ppu"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -6,9 +6,9 @@ import (
 	"log"
 	"strings"
 
-	"github.com/sardap/gos/bus"
-	nesmath "github.com/sardap/gos/math"
-	"github.com/sardap/gos/memory"
+	"github.com/sardap/gos/pkg/bus"
+	"github.com/sardap/gos/pkg/memory"
+	"github.com/sardap/gos/pkg/utility"
 )
 
 const (
@@ -46,8 +46,8 @@ func (c *Cpu) PushByte(value byte) {
 
 func (c *Cpu) PushP() {
 	value := c.Registers.P.Read()
-	value = nesmath.SetBit(value, byte(FlagBreakCommand), c.Interupt)
-	value = nesmath.SetBit(value, byte(FlagUnsued), true)
+	value = utility.SetBit(value, byte(FlagBreakCommand), c.Interupt)
+	value = utility.SetBit(value, byte(FlagUnsued), true)
 
 	c.PushByte(value)
 }
@@ -60,8 +60,8 @@ func (c *Cpu) PopByte() byte {
 
 func (c *Cpu) PopP() {
 	value := c.PopByte()
-	value = nesmath.SetBit(value, byte(FlagUnsued), true)
-	value = nesmath.SetBit(value, byte(FlagBreakCommand), false)
+	value = utility.SetBit(value, byte(FlagUnsued), true)
+	value = utility.SetBit(value, byte(FlagBreakCommand), false)
 
 	c.Registers.P.Write(value)
 }
@@ -164,10 +164,10 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 		return uint16(byteOperand)
 
 	case AddressModeZeroPageX:
-		return nesmath.WrapUint16(uint16(byteOperand)+uint16(c.Registers.X), 0xFF)
+		return utility.WrapUint16(uint16(byteOperand)+uint16(c.Registers.X), 0xFF)
 
 	case AddressModeZeroPageY:
-		return nesmath.WrapUint16(uint16(byteOperand)+uint16(c.Registers.Y), 0xFF)
+		return utility.WrapUint16(uint16(byteOperand)+uint16(c.Registers.Y), 0xFF)
 
 	case AddressModeAbsolute:
 		return c.Memory.ReadUint16At(c.Registers.PC + 1)
@@ -204,14 +204,14 @@ func (c *Cpu) GetOprandAddress(addressMode AddressMode) uint16 {
 	case AddressModeIndirectX:
 		address := uint16(byteOperand) + uint16(c.Registers.X)
 		return binary.LittleEndian.Uint16([]byte{
-			c.Memory.ReadByteAt(nesmath.WrapUint16(address, 0xFF)),
-			c.Memory.ReadByteAt(nesmath.WrapUint16(address+1, 0xFF)),
+			c.Memory.ReadByteAt(utility.WrapUint16(address, 0xFF)),
+			c.Memory.ReadByteAt(utility.WrapUint16(address+1, 0xFF)),
 		})
 
 	case AddressModeIndirectY:
 		indirect := binary.LittleEndian.Uint16([]byte{
-			c.Memory.ReadByteAt(nesmath.WrapUint16(uint16(byteOperand), 0xFF)),
-			c.Memory.ReadByteAt(nesmath.WrapUint16(uint16(byteOperand)+1, 0xFF)),
+			c.Memory.ReadByteAt(utility.WrapUint16(uint16(byteOperand), 0xFF)),
+			c.Memory.ReadByteAt(utility.WrapUint16(uint16(byteOperand)+1, 0xFF)),
 		})
 		address := indirect + uint16(c.Registers.Y)
 		if diffrentPages(address, indirect) {

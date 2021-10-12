@@ -3,9 +3,9 @@ package memory_test
 import (
 	"testing"
 
-	"github.com/sardap/gos/bus"
-	"github.com/sardap/gos/memory"
-	"github.com/sardap/gos/ppu"
+	"github.com/sardap/gos/pkg/bus"
+	"github.com/sardap/gos/pkg/memory"
+	"github.com/sardap/gos/pkg/ppu"
 	"github.com/stretchr/testify/assert"
 )
 

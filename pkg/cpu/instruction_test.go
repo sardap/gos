@@ -6,10 +6,10 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/sardap/gos/bus"
-	"github.com/sardap/gos/cart"
-	"github.com/sardap/gos/cpu"
-	"github.com/sardap/gos/memory"
+	"github.com/sardap/gos/pkg/bus"
+	"github.com/sardap/gos/pkg/cart"
+	"github.com/sardap/gos/pkg/cpu"
+	"github.com/sardap/gos/pkg/memory"
 	"github.com/stretchr/testify/assert"
 )
 

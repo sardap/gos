@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/sardap/gos/bus"
-	nesmath "github.com/sardap/gos/math"
+	"github.com/sardap/gos/pkg/bus"
+	"github.com/sardap/gos/pkg/utility"
 )
 
 var (
@@ -56,7 +56,7 @@ func (m *Memory) WriteByteAt(address uint16, value byte) {
 		// OMA DMA
 		case 0x4014:
 			m.DmaTransfer = true
-			baseReadAddress := nesmath.CombineToUint16(0x00, value)
+			baseReadAddress := utility.CombineToUint16(0x00, value)
 			for i := byte(0x00); i < 0xFF; i++ {
 				value := m.ReadByteAt(baseReadAddress + uint16(i))
 				m.bus.Ppu.WriteByteToOAM(i, value)

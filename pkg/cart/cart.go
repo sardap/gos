@@ -3,7 +3,7 @@ package cart
 import (
 	"fmt"
 
-	nesmath "github.com/sardap/gos/math"
+	"github.com/sardap/gos/pkg/utility"
 )
 
 var (
@@ -29,17 +29,17 @@ func CreateControlByte1(data byte) *ControlByte1 {
 	result := &ControlByte1{}
 
 	mapperLower := byte(0)
-	mapperLower = nesmath.SetBit(mapperLower, 0, nesmath.BitSet(data, 4))
-	mapperLower = nesmath.SetBit(mapperLower, 1, nesmath.BitSet(data, 5))
-	mapperLower = nesmath.SetBit(mapperLower, 2, nesmath.BitSet(data, 6))
-	mapperLower = nesmath.SetBit(mapperLower, 3, nesmath.BitSet(data, 7))
+	mapperLower = utility.SetBit(mapperLower, 0, utility.BitSet(data, 4))
+	mapperLower = utility.SetBit(mapperLower, 1, utility.BitSet(data, 5))
+	mapperLower = utility.SetBit(mapperLower, 2, utility.BitSet(data, 6))
+	mapperLower = utility.SetBit(mapperLower, 3, utility.BitSet(data, 7))
 	result.MapperLowerBits = mapperLower
 
-	result.FourScreenVramLayout = nesmath.BitSet(3, data)
-	result.Trainer512Byte = nesmath.BitSet(2, data)
-	result.BatteryRam = nesmath.BitSet(1, data)
+	result.FourScreenVramLayout = utility.BitSet(3, data)
+	result.Trainer512Byte = utility.BitSet(2, data)
+	result.BatteryRam = utility.BitSet(1, data)
 
-	if nesmath.BitSet(0, data) {
+	if utility.BitSet(0, data) {
 		result.MirrorType = MirrorTypeVertical
 	} else {
 		result.MirrorType = MirrorTypeHorizontal
@@ -64,15 +64,15 @@ func CreateControlByte2(data byte) (*ControlByte2, error) {
 	result := &ControlByte2{}
 
 	mapperHigher := byte(0)
-	mapperHigher = nesmath.SetBit(mapperHigher, 4, nesmath.BitSet(data, 4))
-	mapperHigher = nesmath.SetBit(mapperHigher, 5, nesmath.BitSet(data, 5))
-	mapperHigher = nesmath.SetBit(mapperHigher, 6, nesmath.BitSet(data, 6))
-	mapperHigher = nesmath.SetBit(mapperHigher, 7, nesmath.BitSet(data, 7))
+	mapperHigher = utility.SetBit(mapperHigher, 4, utility.BitSet(data, 4))
+	mapperHigher = utility.SetBit(mapperHigher, 5, utility.BitSet(data, 5))
+	mapperHigher = utility.SetBit(mapperHigher, 6, utility.BitSet(data, 6))
+	mapperHigher = utility.SetBit(mapperHigher, 7, utility.BitSet(data, 7))
 	result.MapperHigherBits = mapperHigher
 
-	if nesmath.BitSet(data, 3) && !nesmath.BitSet(data, 2) {
+	if utility.BitSet(data, 3) && !utility.BitSet(data, 2) {
 		result.INesFormat = INesFormatType2
-	} else if !nesmath.BitSet(data, 3) && !nesmath.BitSet(data, 2) {
+	} else if !utility.BitSet(data, 3) && !utility.BitSet(data, 2) {
 		result.INesFormat = INesFormatType1
 	} else {
 		return nil, ErrInvalidRom
@@ -175,6 +175,6 @@ func (c *NRom) ReadByteAt(address uint16) byte {
 	case address >= 0xC000 && address <= 0xFFFF:
 		return c.Prg[address-0xC000]
 	default:
-		panic("fuck")
+		panic(fmt.Sprintf("%04X", address))
 	}
 }

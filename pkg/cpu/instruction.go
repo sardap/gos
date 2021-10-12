@@ -3,8 +3,8 @@ package cpu
 import (
 	"fmt"
 
-	"github.com/sardap/gos/bus"
-	nesmath "github.com/sardap/gos/math"
+	"github.com/sardap/gos/pkg/bus"
+	"github.com/sardap/gos/pkg/utility"
 )
 
 type AddressMode int
@@ -386,9 +386,9 @@ func GetOpcodes() map[byte]*Operation {
 
 func overflowHappend(left, right, result byte) bool {
 	if int8(left) > 0 && int8(right) > 0 {
-		return nesmath.BitSet(result, 7)
+		return utility.BitSet(result, 7)
 	} else if int8(left) < 0 && int8(right) < 0 {
-		return !nesmath.BitSet(result, 7)
+		return !utility.BitSet(result, 7)
 	}
 
 	return false
@@ -404,7 +404,7 @@ func cmpCarryHappend(a, right uint8) bool {
 }
 
 func negativeHappend(result uint16) bool {
-	return nesmath.BitSet(byte(result), 7)
+	return utility.BitSet(byte(result), 7)
 }
 
 func zeroHappend(result uint16) bool {
@@ -502,9 +502,9 @@ func Bvs(c *Cpu, mode AddressMode) {
 func Bit(c *Cpu, mode AddressMode) {
 	operand := c.ReadByteByMode(mode)
 
-	c.Registers.P.SetFlag(FlagNegative, nesmath.BitSet(operand, 7))
+	c.Registers.P.SetFlag(FlagNegative, utility.BitSet(operand, 7))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(uint16(c.Registers.A&operand)))
-	c.Registers.P.SetFlag(FlagOverflow, nesmath.BitSet(operand, 6))
+	c.Registers.P.SetFlag(FlagOverflow, utility.BitSet(operand, 6))
 }
 
 func clearBit(c *Cpu, flag Flag) {
@@ -707,7 +707,7 @@ func Ror(c *Cpu, mode AddressMode) {
 
 	c.Registers.P.SetFlag(FlagNegative, negativeHappend(result))
 	c.Registers.P.SetFlag(FlagZero, zeroHappend(result))
-	c.Registers.P.SetFlag(FlagCarry, nesmath.BitSet(operand, 0))
+	c.Registers.P.SetFlag(FlagCarry, utility.BitSet(operand, 0))
 
 	c.WriteByteByMode(mode, byte(result))
 }

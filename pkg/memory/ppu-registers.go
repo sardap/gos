@@ -5,8 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sardap/gos/bus"
-	nesmath "github.com/sardap/gos/math"
+	"github.com/sardap/gos/pkg/bus"
+	"github.com/sardap/gos/pkg/utility"
 )
 
 type PpuFlag byte
@@ -31,7 +31,7 @@ func (p *Register) Read() byte {
 }
 
 func (p *Register) BitSet(flag PpuFlag) bool {
-	return nesmath.BitSet(p.Read(), byte(flag))
+	return utility.BitSet(p.Read(), byte(flag))
 }
 
 type PpuCtrl struct {
@@ -39,7 +39,7 @@ type PpuCtrl struct {
 }
 
 func (p *PpuCtrl) VramIncrement() byte {
-	if nesmath.BitSet(p.val, 2) {
+	if utility.BitSet(p.val, 2) {
 		// Down
 		return 32
 	}
@@ -50,8 +50,8 @@ func (p *PpuCtrl) VramIncrement() byte {
 
 func (p *PpuCtrl) NameTableAddress() byte {
 	flag := byte(0)
-	flag = nesmath.SetBit(flag, 0, nesmath.BitSet(p.val, 0))
-	flag = nesmath.SetBit(flag, 1, nesmath.BitSet(p.val, 1))
+	flag = utility.SetBit(flag, 0, utility.BitSet(p.val, 0))
+	flag = utility.SetBit(flag, 1, utility.BitSet(p.val, 1))
 
 	return flag
 }

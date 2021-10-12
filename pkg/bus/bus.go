@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/sardap/gos/cart"
+	"github.com/sardap/gos/pkg/cart"
 )
 
 type Element interface {
